@@ -7,3 +7,7 @@ node_modules
 dist
 airflow/logs
 airflow/data
+cfr_xmls/
+temp_extract/
+*.xml
+*.zip

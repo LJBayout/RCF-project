@@ -28,8 +28,11 @@ export const cfrRouter = router({
 
   /** Um título com suas partes (sem seções). */
   getTitle: publicProcedure
-    .input(z.object({ titleNumber: z.number().int().positive() }))
-    .query(async ({ input }) => cfr.getTitle(input.titleNumber)),
+    .input(z.object({ 
+      titleNumber: z.number().int().positive(),
+      year: z.number().int().min(1990).max(2030).optional()
+    }))
+    .query(async ({ input }) => cfr.getTitle(input.titleNumber, input.year)),
 
   /** Uma parte com suas seções; identificada por title + part number. */
   getPart: publicProcedure

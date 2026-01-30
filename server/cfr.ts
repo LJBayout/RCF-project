@@ -53,14 +53,20 @@ export async function searchFulltext(
     .limit(limit);
 }
 
-export async function getTitle(titleNumber: number) {
+export async function getTitle(titleNumber: number, year?: number) {
   const database = await db.getDb();
   if (!database) return null;
+
+  // Build where clause with optional year filter
+  const whereClause = year 
+    ? and(eq(cfrTitles.titleNumber, titleNumber), eq(cfrTitles.year, year))
+    : eq(cfrTitles.titleNumber, titleNumber);
 
   const [title] = await database
     .select()
     .from(cfrTitles)
-    .where(eq(cfrTitles.titleNumber, titleNumber))
+    .where(whereClause)
+    .orderBy(cfrTitles.year) // Get latest if no year specified
     .limit(1);
   if (!title) return null;
 
@@ -152,18 +158,33 @@ export async function listTitles(year?: number) {
   const database = await db.getDb();
   if (!database) return [];
 
-  const base = database
-    .select({
-      id: cfrTitles.id,
-      titleNumber: cfrTitles.titleNumber,
-      name: cfrTitles.name,
-      subject: cfrTitles.subject,
-      year: cfrTitles.year,
-    })
-    .from(cfrTitles);
-
   if (year != null) {
-    return base.where(eq(cfrTitles.year, year)).orderBy(cfrTitles.titleNumber);
+    // Specific year: show all titles for that year
+    return database
+      .select({
+        id: cfrTitles.id,
+        titleNumber: cfrTitles.titleNumber,
+        name: cfrTitles.name,
+        subject: cfrTitles.subject,
+        year: cfrTitles.year,
+      })
+      .from(cfrTitles)
+      .where(eq(cfrTitles.year, year))
+      .orderBy(cfrTitles.titleNumber);
   }
-  return base.orderBy(cfrTitles.titleNumber);
+  
+  // All years: show only the LATEST version of each title
+  const sql = `
+    SELECT t1.id, t1.title_number as titleNumber, t1.name, t1.subject, t1.year
+    FROM cfr_titles t1
+    INNER JOIN (
+      SELECT title_number, MAX(year) as max_year
+      FROM cfr_titles
+      GROUP BY title_number
+    ) t2 ON t1.title_number = t2.title_number AND t1.year = t2.max_year
+    ORDER BY t1.title_number
+  `;
+  
+  const results = await database.execute(sql);
+  return results[0] as any[];
 }
