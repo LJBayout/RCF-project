@@ -17,6 +17,7 @@ x-airflow-common:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./airflow/data:/opt/airflow/data
+    - ${CFR_XML_PATH:-./cfr_xmls}:/opt/airflow/external_data:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     postgres:
@@ -101,6 +102,19 @@ services:
         airflow db init
         airflow users create --username airflow --password airflow --firstname Admin --lastname User --role Admin --email admin@example.com || true
     restart: "no"
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: app
+      PMA_PASSWORD: app
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
 
 volumes:
   mysql-data:

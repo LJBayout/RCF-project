@@ -1,0 +1,56 @@
+-- Update existing titles with proper names and subjects
+USE cfr_platform;
+
+UPDATE cfr_titles SET name = 'General Provisions', subject = 'General Provisions' WHERE title_number = 1;
+UPDATE cfr_titles SET name = 'Grants and Agreements', subject = 'Grants and Agreements' WHERE title_number = 2;
+UPDATE cfr_titles SET name = 'The President', subject = 'The President' WHERE title_number = 3;
+UPDATE cfr_titles SET name = 'Accounts', subject = 'Accounts' WHERE title_number = 4;
+UPDATE cfr_titles SET name = 'Administrative Personnel', subject = 'Administrative Personnel' WHERE title_number = 5;
+UPDATE cfr_titles SET name = 'Domestic Security', subject = 'Domestic Security' WHERE title_number = 6;
+UPDATE cfr_titles SET name = 'Agriculture', subject = 'Agriculture' WHERE title_number = 7;
+UPDATE cfr_titles SET name = 'Aliens and Nationality', subject = 'Aliens and Nationality' WHERE title_number = 8;
+UPDATE cfr_titles SET name = 'Animals and Animal Products', subject = 'Animals and Animal Products' WHERE title_number = 9;
+UPDATE cfr_titles SET name = 'Energy', subject = 'Energy' WHERE title_number = 10;
+UPDATE cfr_titles SET name = 'Federal Elections', subject = 'Federal Elections' WHERE title_number = 11;
+UPDATE cfr_titles SET name = 'Banks and Banking', subject = 'Banks and Banking' WHERE title_number = 12;
+UPDATE cfr_titles SET name = 'Business Credit and Assistance', subject = 'Business Credit and Assistance' WHERE title_number = 13;
+UPDATE cfr_titles SET name = 'Aeronautics and Space', subject = 'Aeronautics and Space' WHERE title_number = 14;
+UPDATE cfr_titles SET name = 'Commerce and Foreign Trade', subject = 'Commerce and Foreign Trade' WHERE title_number = 15;
+UPDATE cfr_titles SET name = 'Commercial Practices', subject = 'Commercial Practices' WHERE title_number = 16;
+UPDATE cfr_titles SET name = 'Commodity and Securities Exchanges', subject = 'Commodity and Securities Exchanges' WHERE title_number = 17;
+UPDATE cfr_titles SET name = 'Conservation of Power and Water Resources', subject = 'Conservation of Power and Water Resources' WHERE title_number = 18;
+UPDATE cfr_titles SET name = 'Customs Duties', subject = 'Customs Duties' WHERE title_number = 19;
+UPDATE cfr_titles SET name = 'Employees'' Benefits', subject = 'Employees'' Benefits' WHERE title_number = 20;
+UPDATE cfr_titles SET name = 'Food and Drugs', subject = 'Food and Drugs' WHERE title_number = 21;
+UPDATE cfr_titles SET name = 'Foreign Relations', subject = 'Foreign Relations' WHERE title_number = 22;
+UPDATE cfr_titles SET name = 'Highways', subject = 'Highways' WHERE title_number = 23;
+UPDATE cfr_titles SET name = 'Housing and Urban Development', subject = 'Housing and Urban Development' WHERE title_number = 24;
+UPDATE cfr_titles SET name = 'Indians', subject = 'Indians' WHERE title_number = 25;
+UPDATE cfr_titles SET name = 'Internal Revenue', subject = 'Internal Revenue' WHERE title_number = 26;
+UPDATE cfr_titles SET name = 'Alcohol, Tobacco Products and Firearms', subject = 'Alcohol, Tobacco Products and Firearms' WHERE title_number = 27;
+UPDATE cfr_titles SET name = 'Judicial Administration', subject = 'Judicial Administration' WHERE title_number = 28;
+UPDATE cfr_titles SET name = 'Labor', subject = 'Labor' WHERE title_number = 29;
+UPDATE cfr_titles SET name = 'Mineral Resources', subject = 'Mineral Resources' WHERE title_number = 30;
+UPDATE cfr_titles SET name = 'Money and Finance: Treasury', subject = 'Money and Finance: Treasury' WHERE title_number = 31;
+UPDATE cfr_titles SET name = 'National Defense', subject = 'National Defense' WHERE title_number = 32;
+UPDATE cfr_titles SET name = 'Navigation and Navigable Waters', subject = 'Navigation and Navigable Waters' WHERE title_number = 33;
+UPDATE cfr_titles SET name = 'Education', subject = 'Education' WHERE title_number = 34;
+UPDATE cfr_titles SET name = 'Panama Canal', subject = 'Panama Canal' WHERE title_number = 35;
+UPDATE cfr_titles SET name = 'Parks, Forests, and Public Property', subject = 'Parks, Forests, and Public Property' WHERE title_number = 36;
+UPDATE cfr_titles SET name = 'Patents, Trademarks, and Copyrights', subject = 'Patents, Trademarks, and Copyrights' WHERE title_number = 37;
+UPDATE cfr_titles SET name = 'Pensions, Bonuses, and Veterans'' Relief', subject = 'Pensions, Bonuses, and Veterans'' Relief' WHERE title_number = 38;
+UPDATE cfr_titles SET name = 'Postal Service', subject = 'Postal Service' WHERE title_number = 39;
+UPDATE cfr_titles SET name = 'Protection of Environment', subject = 'Protection of Environment' WHERE title_number = 40;
+UPDATE cfr_titles SET name = 'Public Contracts and Property Management', subject = 'Public Contracts and Property Management' WHERE title_number = 41;
+UPDATE cfr_titles SET name = 'Public Health', subject = 'Public Health' WHERE title_number = 42;
+UPDATE cfr_titles SET name = 'Public Lands: Interior', subject = 'Public Lands: Interior' WHERE title_number = 43;
+UPDATE cfr_titles SET name = 'Emergency Management and Assistance', subject = 'Emergency Management and Assistance' WHERE title_number = 44;
+UPDATE cfr_titles SET name = 'Public Welfare', subject = 'Public Welfare' WHERE title_number = 45;
+UPDATE cfr_titles SET name = 'Shipping', subject = 'Shipping' WHERE title_number = 46;
+UPDATE cfr_titles SET name = 'Telecommunication', subject = 'Telecommunication' WHERE title_number = 47;
+UPDATE cfr_titles SET name = 'Federal Acquisition Regulations System', subject = 'Federal Acquisition Regulations System' WHERE title_number = 48;
+UPDATE cfr_titles SET name = 'Transportation', subject = 'Transportation' WHERE title_number = 49;
+UPDATE cfr_titles SET name = 'Wildlife and Fisheries', subject = 'Wildlife and Fisheries' WHERE title_number = 50;
+
+-- Show updated titles
+SELECT title_number, name, subject, year FROM cfr_titles ORDER BY title_number;

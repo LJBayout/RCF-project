@@ -1,10 +1,18 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import { FileText, Menu, X } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { FileText, Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, logout, isAuthenticated } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    setLocation("/login");
+  };
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -20,19 +28,9 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/#features">
+            <Link href="/browse">
               <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </a>
-            </Link>
-            <Link href="/#pricing">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </a>
-            </Link>
-            <Link href="/docs">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                API Docs
+                Browse CFR
               </a>
             </Link>
             <Link href="/search">
@@ -40,20 +38,43 @@ export function Navbar() {
                 Search
               </a>
             </Link>
+            <Link href="/docs">
+              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                API Docs
+              </a>
+            </Link>
+            <Link href="/#pricing">
+              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Pricing
+              </a>
+            </Link>
           </div>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                Dashboard
-              </Button>
-            </Link>
-            <Link href="/#pricing">
-              <Button size="sm">
-                Get Started
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User className="h-4 w-4" />
+                  <span>{user?.username}</span>
+                </div>
+                <Link href="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button size="sm">
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -72,14 +93,14 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t">
-            <Link href="/#features">
+            <Link href="/browse">
               <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Features
+                Browse CFR
               </a>
             </Link>
-            <Link href="/#pricing">
+            <Link href="/search">
               <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Pricing
+                Search
               </a>
             </Link>
             <Link href="/docs">
@@ -87,9 +108,9 @@ export function Navbar() {
                 API Docs
               </a>
             </Link>
-            <Link href="/search">
+            <Link href="/#pricing">
               <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Search
+                Pricing
               </a>
             </Link>
             <div className="pt-3 space-y-2">
@@ -98,11 +119,29 @@ export function Navbar() {
                   Dashboard
                 </Button>
               </Link>
-              <Link href="/#pricing">
-                <Button className="w-full" size="sm">
-                  Get Started
-                </Button>
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  <div className="py-2 text-sm text-muted-foreground flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {user?.username}
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <Link href="/login">
+                  <Button className="w-full" size="sm">
+                    Login
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         )}

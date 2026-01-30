@@ -19,11 +19,57 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * SOC 2 - Audit Logs (CC6.8, CC7.2)
+ * Track all access and modifications for compliance
+ */
+export const auditLogs = mysqlTable("audit_logs", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  userId: int("user_id").references(() => users.id),
+  action: varchar("action", { length: 100 }).notNull(),
+  resource: varchar("resource", { length: 100 }).notNull(),
+  resourceId: varchar("resource_id", { length: 255 }),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  metadata: text("metadata"),
+  success: int("success").notNull().default(1),
+  errorMessage: text("error_message"),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("user_id_idx").on(table.userId),
+  timestampIdx: index("timestamp_idx").on(table.timestamp),
+  actionIdx: index("action_idx").on(table.action),
+}));
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type InsertAuditLog = typeof auditLogs.$inferInsert;
+
+/**
+ * SOC 2 - API Keys for customer access (CC6.1)
+ */
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  keyHash: varchar("key_hash", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  lastUsed: timestamp("last_used"),
+  expiresAt: timestamp("expires_at"),
+  rateLimit: int("rate_limit").default(1000), // requests per hour
+  isActive: int("is_active").notNull().default(1),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  keyHashIdx: index("key_hash_idx").on(table.keyHash),
+  userIdIdx: index("user_id_idx").on(table.userId),
+}));
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+/**
  * CFR Titles - Top level organization (e.g., Title 19: Customs Duties)
  */
 export const cfrTitles = mysqlTable("cfr_titles", {
   id: int("id").autoincrement().primaryKey(),
-  titleNumber: int("title_number").notNull().unique(),
+  titleNumber: int("title_number").notNull(),
   name: text("name").notNull(),
   subject: text("subject"),
   year: int("year").notNull(),
@@ -31,6 +77,7 @@ export const cfrTitles = mysqlTable("cfr_titles", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   titleNumberIdx: index("title_number_idx").on(table.titleNumber),
+  uniqueTitleYear: unique("unique_title_year").on(table.titleNumber, table.year),
 }));
 
 export type CfrTitle = typeof cfrTitles.$inferSelect;
@@ -95,24 +142,6 @@ export const subscriptions = mysqlTable("subscriptions", {
 
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
-
-/**
- * API Keys for authentication
- */
-export const apiKeys = mysqlTable("api_keys", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  key: varchar("key", { length: 64 }).notNull().unique(),
-  name: varchar("name", { length: 255 }),
-  lastUsedAt: timestamp("last_used_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  keyIdx: index("key_idx").on(table.key),
-  userIdIdx: index("user_id_idx").on(table.userId),
-}));
-
-export type ApiKey = typeof apiKeys.$inferSelect;
-export type InsertApiKey = typeof apiKeys.$inferInsert;
 
 /**
  * API Usage tracking for rate limiting and analytics

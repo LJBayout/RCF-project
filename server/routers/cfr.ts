@@ -48,6 +48,11 @@ export const cfrRouter = router({
     .input(z.object({ sectionId: z.number().int().positive() }))
     .query(async ({ input }) => cfr.getSectionById(input.sectionId)),
 
-  /** Lista todos os títulos (para filtros na UI). */
-  listTitles: publicProcedure.query(() => cfr.listTitles()),
+  /** Lista anos disponíveis (para filtro por ano). */
+  listYears: publicProcedure.query(() => cfr.listYears()),
+
+  /** Lista títulos, opcionalmente filtrados por ano. */
+  listTitles: publicProcedure
+    .input(z.object({ year: z.number().int().min(1990).max(2030).optional() }).optional())
+    .query(async ({ input }) => cfr.listTitles(input?.year)),
 });

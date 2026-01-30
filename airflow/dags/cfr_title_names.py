@@ -1,0 +1,65 @@
+"""
+Official CFR Title Names
+Source: https://www.ecfr.gov/
+"""
+
+CFR_TITLE_NAMES = {
+    1: "General Provisions",
+    2: "Grants and Agreements",
+    3: "The President",
+    4: "Accounts",
+    5: "Administrative Personnel",
+    6: "Domestic Security",
+    7: "Agriculture",
+    8: "Aliens and Nationality",
+    9: "Animals and Animal Products",
+    10: "Energy",
+    11: "Federal Elections",
+    12: "Banks and Banking",
+    13: "Business Credit and Assistance",
+    14: "Aeronautics and Space",
+    15: "Commerce and Foreign Trade",
+    16: "Commercial Practices",
+    17: "Commodity and Securities Exchanges",
+    18: "Conservation of Power and Water Resources",
+    19: "Customs Duties",
+    20: "Employees' Benefits",
+    21: "Food and Drugs",
+    22: "Foreign Relations",
+    23: "Highways",
+    24: "Housing and Urban Development",
+    25: "Indians",
+    26: "Internal Revenue",
+    27: "Alcohol, Tobacco Products and Firearms",
+    28: "Judicial Administration",
+    29: "Labor",
+    30: "Mineral Resources",
+    31: "Money and Finance: Treasury",
+    32: "National Defense",
+    33: "Navigation and Navigable Waters",
+    34: "Education",
+    35: "Panama Canal",
+    36: "Parks, Forests, and Public Property",
+    37: "Patents, Trademarks, and Copyrights",
+    38: "Pensions, Bonuses, and Veterans' Relief",
+    39: "Postal Service",
+    40: "Protection of Environment",
+    41: "Public Contracts and Property Management",
+    42: "Public Health",
+    43: "Public Lands: Interior",
+    44: "Emergency Management and Assistance",
+    45: "Public Welfare",
+    46: "Shipping",
+    47: "Telecommunication",
+    48: "Federal Acquisition Regulations System",
+    49: "Transportation",
+    50: "Wildlife and Fisheries",
+}
+
+def get_title_name(title_number: int) -> str:
+    """Get the official CFR title name."""
+    return CFR_TITLE_NAMES.get(title_number, f"Title {title_number}")
+
+def get_title_subject(title_number: int) -> str:
+    """Get the official CFR title subject (same as name)."""
+    return get_title_name(title_number)

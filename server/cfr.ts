@@ -136,11 +136,23 @@ export async function getSectionById(sectionId: number) {
   return { section, part, title: title ?? null };
 }
 
-export async function listTitles() {
+/** Distinct years present in cfr_titles (for year filter). */
+export async function listYears(): Promise<number[]> {
   const database = await db.getDb();
   if (!database) return [];
 
-  return database
+  const rows = await database
+    .selectDistinct({ year: cfrTitles.year })
+    .from(cfrTitles)
+    .orderBy(cfrTitles.year);
+  return rows.map((r) => r.year);
+}
+
+export async function listTitles(year?: number) {
+  const database = await db.getDb();
+  if (!database) return [];
+
+  const base = database
     .select({
       id: cfrTitles.id,
       titleNumber: cfrTitles.titleNumber,
@@ -148,6 +160,10 @@ export async function listTitles() {
       subject: cfrTitles.subject,
       year: cfrTitles.year,
     })
-    .from(cfrTitles)
-    .orderBy(cfrTitles.titleNumber);
+    .from(cfrTitles);
+
+  if (year != null) {
+    return base.where(eq(cfrTitles.year, year)).orderBy(cfrTitles.titleNumber);
+  }
+  return base.orderBy(cfrTitles.titleNumber);
 }

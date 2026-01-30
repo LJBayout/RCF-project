@@ -25,9 +25,9 @@ export default function Home() {
               Powerful API and search platform for all 50 titles of the CFR. Get instant access to structured regulatory data with lightning-fast search capabilities.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/#pricing">
+              <Link href="/browse">
                 <Button size="lg" className="text-base">
-                  Start Free Trial
+                  Browse CFR Data
                 </Button>
               </Link>
               <Link href="/search">
