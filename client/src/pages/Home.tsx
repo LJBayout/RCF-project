@@ -33,7 +33,7 @@ export default function Home() {
             <Badge variant="secondary" className="mb-4">
               Trusted by Legal & Compliance Professionals
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight" data-tour="home-hero">
               Access the Complete{" "}
               <span className="text-primary">Code of Federal Regulations</span>
             </h1>

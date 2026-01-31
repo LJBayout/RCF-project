@@ -91,18 +91,23 @@ export async function getTitle(titleNumber: number, year?: number) {
   );
 }
 
-export async function getPart(titleNumber: number, partNumber: number) {
+export async function getPart(titleNumber: number, partNumber: number, year?: number) {
   return getOrSetCache(
     "getPart",
-    { titleNumber, partNumber },
+    { titleNumber, partNumber, year: year ?? null },
     async () => {
       const database = await db.getDb();
       if (!database) return null;
 
+      const titleWhere = year
+        ? and(eq(cfrTitles.titleNumber, titleNumber), eq(cfrTitles.year, year))
+        : eq(cfrTitles.titleNumber, titleNumber);
+
       const [title] = await database
         .select()
         .from(cfrTitles)
-        .where(eq(cfrTitles.titleNumber, titleNumber))
+        .where(titleWhere)
+        .orderBy(cfrTitles.year)
         .limit(1);
       if (!title) return null;
 
@@ -194,52 +199,59 @@ function normalizeTitleRow(row: unknown): { id: number; titleNumber: number; nam
 }
 
 /**
- * List CFR titles — always from DB (no cache) so cards always render with fresh, consistent data.
- * Returns a strict shape so the frontend never sees malformed or cached-stale rows.
+ * List CFR titles — cached in Redis for fast UI rendering.
+ * Returns a strict shape so the frontend never sees malformed rows.
  */
 export async function listTitles(year?: number): Promise<{ id: number; titleNumber: number; name: string | null; subject: string | null; year: number }[]> {
-  const database = await db.getDb();
-  if (!database) return [];
+  return getOrSetCache(
+    "listTitles",
+    { year: year ?? null },
+    async () => {
+      const database = await db.getDb();
+      if (!database) return [];
 
-  if (year != null) {
-    const rows = await database
-      .select({
-        id: cfrTitles.id,
-        titleNumber: cfrTitles.titleNumber,
-        name: cfrTitles.name,
-        subject: cfrTitles.subject,
-        year: cfrTitles.year,
-      })
-      .from(cfrTitles)
-      .where(eq(cfrTitles.year, year))
-      .orderBy(cfrTitles.titleNumber);
-    const normalized = rows.map((r) => normalizeTitleRow(r)).filter((n): n is NonNullable<typeof n> => n != null);
-    return normalized;
-  }
+      if (year != null) {
+        const rows = await database
+          .select({
+            id: cfrTitles.id,
+            titleNumber: cfrTitles.titleNumber,
+            name: cfrTitles.name,
+            subject: cfrTitles.subject,
+            year: cfrTitles.year,
+          })
+          .from(cfrTitles)
+          .where(eq(cfrTitles.year, year))
+          .orderBy(cfrTitles.titleNumber);
+        const normalized = rows.map((r) => normalizeTitleRow(r)).filter((n): n is NonNullable<typeof n> => n != null);
+        return normalized;
+      }
 
-  // All years: latest version of each title (raw SQL for subquery; normalize every row)
-  const raw = await database.execute(sql`
-    SELECT t1.id, t1.title_number as titleNumber, t1.name, t1.subject, t1.year
-    FROM cfr_titles t1
-    INNER JOIN (
-      SELECT title_number, MAX(year) as max_year
-      FROM cfr_titles
-      GROUP BY title_number
-    ) t2 ON t1.title_number = t2.title_number AND t1.year = t2.max_year
-    ORDER BY t1.title_number
-  `);
-  let rows: unknown[] = [];
-  if (Array.isArray(raw)) {
-    rows = Array.isArray(raw[0]) ? raw[0] : (raw[0] != null ? [raw[0]] : []);
-  } else if (raw && typeof raw === "object" && "0" in raw) {
-    rows = Array.isArray((raw as any)[0]) ? (raw as any)[0] : [];
-  }
-  const out: { id: number; titleNumber: number; name: string | null; subject: string | null; year: number }[] = [];
-  for (const row of rows) {
-    const n = normalizeTitleRow(row);
-    if (n) out.push(n);
-  }
-  return out;
+      // All years: latest version of each title (raw SQL for subquery; normalize every row)
+      const raw = await database.execute(sql`
+        SELECT t1.id, t1.title_number as titleNumber, t1.name, t1.subject, t1.year
+        FROM cfr_titles t1
+        INNER JOIN (
+          SELECT title_number, MAX(year) as max_year
+          FROM cfr_titles
+          GROUP BY title_number
+        ) t2 ON t1.title_number = t2.title_number AND t1.year = t2.max_year
+        ORDER BY t1.title_number
+      `);
+      let rows: unknown[] = [];
+      if (Array.isArray(raw)) {
+        rows = Array.isArray(raw[0]) ? raw[0] : (raw[0] != null ? [raw[0]] : []);
+      } else if (raw && typeof raw === "object" && "0" in raw) {
+        rows = Array.isArray((raw as any)[0]) ? (raw as any)[0] : [];
+      }
+      const out: { id: number; titleNumber: number; name: string | null; subject: string | null; year: number }[] = [];
+      for (const row of rows) {
+        const n = normalizeTitleRow(row);
+        if (n) out.push(n);
+      }
+      return out;
+    },
+    300 // 5 minutes TTL
+  );
 }
 
 /** Aggregate counts for UI: distinct titles and total sections (same DB Airflow writes to). */

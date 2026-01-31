@@ -6,7 +6,7 @@ export default function ApiDocs() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-0" data-tour="docs">
         <iframe
           title="Swagger API Documentation"
           src={SWAGGER_PATH}

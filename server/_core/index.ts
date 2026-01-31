@@ -106,26 +106,6 @@ async function startServer() {
   const swaggerSpec = swaggerJsdoc(swaggerOptions);
   const swaggerCustomCss = `
     .swagger-ui .topbar { display: none }
-    .swagger-ui { font-family: ui-sans-serif, system-ui, sans-serif }
-    .swagger-ui .info .title { color: oklch(0.235 0.015 65); font-weight: 700 }
-    .swagger-ui .info p, .swagger-ui .info a, .swagger-ui table thead th { color: oklch(0.4 0.015 65) }
-    .swagger-ui .opblock.opblock-get .opblock-summary-method { background: oklch(0.546 0.245 262.881) }
-    .swagger-ui .opblock.opblock-post .opblock-summary-method { background: oklch(0.488 0.243 264.376) }
-    .swagger-ui .opblock.opblock-put .opblock-summary-method { background: oklch(0.6 0.126 221.723) }
-    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: oklch(0.637 0.237 25.331) }
-    .swagger-ui .btn.execute { background: oklch(0.546 0.245 262.881); border-color: oklch(0.546 0.245 262.881) }
-    .swagger-ui .btn.execute:hover { background: oklch(0.488 0.243 264.376); border-color: oklch(0.488 0.243 264.376) }
-    .swagger-ui .btn.cancel { color: oklch(0.446 0.043 257.281); border-color: oklch(0.929 0.013 255.508) }
-    .swagger-ui a { color: oklch(0.546 0.245 262.881) }
-    .swagger-ui a:hover { color: oklch(0.488 0.243 264.376) }
-    .swagger-ui .opblock .opblock-summary-method { color: #fff }
-    .swagger-ui .opblock .opblock-section-header { background: oklch(0.967 0.001 286.375); border-color: oklch(0.92 0.004 286.32) }
-    .swagger-ui .opblock .opblock-section-header label { color: oklch(0.235 0.015 65) }
-    .swagger-ui .tab li { color: oklch(0.554 0.016 285.938) }
-    .swagger-ui .tab li.active { color: oklch(0.546 0.245 262.881); border-color: oklch(0.546 0.245 262.881) }
-    .swagger-ui .model-box-control { color: oklch(0.546 0.245 262.881) }
-    .swagger-ui section.models h4 { color: oklch(0.235 0.015 65) }
-    .swagger-ui .model-title { color: oklch(0.4 0.015 65) }
   `;
   app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: swaggerCustomCss,

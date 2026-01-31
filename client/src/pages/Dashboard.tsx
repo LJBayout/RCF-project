@@ -61,10 +61,20 @@ export default function Dashboard() {
       <div className="container py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Monitor your API usage and manage your account
-          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">
+                Governance
+              </Badge>
+              <span className="text-[11px] text-muted-foreground font-medium">
+                Real-time usage intelligence
+              </span>
+            </div>
+            <h1 className="text-3xl font-semibold">Dashboard</h1>
+            <p className="text-muted-foreground max-w-2xl">
+              Monitor request volume, quota health, and endpoint performance to keep compliance operations predictable and auditable.
+            </p>
+          </div>
         </div>
 
         {/* Stats Grid */}

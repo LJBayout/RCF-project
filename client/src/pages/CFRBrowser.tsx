@@ -85,6 +85,7 @@ export default function CFRBrowser() {
     {
       titleNumber: selectedPart?.titleNumber ?? 0,
       partNumber: selectedPart?.partNumber ?? 0,
+      year: selectedYear ?? undefined,
     },
     { enabled: selectedPart !== null && selectedPart !== undefined }
   );
@@ -141,11 +142,11 @@ export default function CFRBrowser() {
       <div className="container mx-auto p-6 max-w-7xl">
         {/* Page header */}
         <div className="mb-6">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-            CFR Browser
+          <h1 className="text-4xl font-bold mb-2 text-slate-900 dark:text-white">
+            CFR Ontological Browser
           </h1>
-          <p className="text-slate-600 dark:text-slate-400 text-lg">
-            Code of Federal Regulations - Complete Database
+          <p className="text-slate-700 dark:text-slate-300 text-lg font-semibold">
+            Code of Federal Regulations - 30 years of CFR
           </p>
         </div>
 
@@ -187,7 +188,7 @@ export default function CFRBrowser() {
                       <Calendar className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <label className="text-sm font-semibold text-white/90 block">📅 Filter by Year</label>
+                      <label className="text-sm font-semibold text-white/90 block" data-tour="browse-year-label">📅 Filter by Year</label>
                       <Select
                         value={selectedYear != null ? String(selectedYear) : "latest"}
                         onValueChange={(v) => {
@@ -195,7 +196,7 @@ export default function CFRBrowser() {
                           setLocation(v === "latest" ? ROUTES.browse : `${ROUTES.browse}?year=${v}`);
                         }}
                       >
-                        <SelectTrigger className="w-[200px] md:w-[240px] mt-1.5 bg-white hover:bg-white/95 border-0 text-slate-900 shadow-lg h-11 font-medium">
+                        <SelectTrigger className="w-[200px] md:w-[240px] mt-1.5 bg-white hover:bg-white/95 border-0 text-slate-900 shadow-lg h-11 font-medium" data-tour="browse-year-filter">
                           <SelectValue placeholder="Latest" />
                         </SelectTrigger>
                         <SelectContent>
@@ -213,7 +214,7 @@ export default function CFRBrowser() {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-4" data-tour="browse-stats">
                     <div className="text-center bg-white/15 backdrop-blur-md rounded-xl px-5 py-3 min-w-[120px] border border-white/20">
                       <div className="text-3xl font-black tracking-tight text-white">{TARGET_TITLES}</div>
                       <div className="text-xs text-blue-50 font-semibold uppercase tracking-wide mt-0.5">Titles</div>
@@ -230,7 +231,7 @@ export default function CFRBrowser() {
             </div>
 
             {/* All CFR Titles - scrollable grid */}
-            <Card className="shadow-lg overflow-hidden flex flex-col min-h-0">
+            <Card className="shadow-lg overflow-hidden flex flex-col min-h-0" data-tour="browse-titles">
               <CardHeader className="shrink-0">
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />

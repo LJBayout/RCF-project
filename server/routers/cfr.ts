@@ -40,10 +40,11 @@ export const cfrRouter = router({
       z.object({
         titleNumber: z.number().int().positive(),
         partNumber: z.number().int().positive(),
+        year: z.number().int().min(1970).max(2030).optional(),
       })
     )
     .query(async ({ input }) =>
-      cfr.getPart(input.titleNumber, input.partNumber)
+      cfr.getPart(input.titleNumber, input.partNumber, input.year)
     ),
 
   /** Uma seção por ID. */
