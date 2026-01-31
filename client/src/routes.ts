@@ -17,6 +17,7 @@ export const ROUTES = {
   browsePart: (titleNumber: number, partNumber: number, year?: number) =>
     `/browse/title/${titleNumber}/part/${partNumber}${year != null ? `?year=${year}` : ""}`,
   search: "/search",
+  askCFR: "/ask",
   docs: "/docs",
   dashboard: "/dashboard",
   notFound: "/404",

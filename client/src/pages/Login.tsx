@@ -38,13 +38,6 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-blue-950 p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="space-y-3 text-center">
-          <div className="mx-auto w-32 h-32 flex items-center justify-center">
-            <img 
-              src="/logo.png" 
-              alt="CIS Logo" 
-              className="w-full h-full object-contain"
-            />
-          </div>
           <CardTitle className="text-2xl font-bold">CFR Data Platform</CardTitle>
           <CardDescription>
             Enterprise-grade regulatory data access

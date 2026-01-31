@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { cfrRouter } from "./routers/cfr";
 import { dashboardRouter } from "./routers/dashboard";
+import { ragRouter } from "./routers/rag";
 import { logAuditEvent } from "./_core/auditLog";
 import { z } from "zod";
 
@@ -12,6 +13,7 @@ export const appRouter = router({
   system: systemRouter,
   cfr: cfrRouter,
   dashboard: dashboardRouter,
+  rag: ragRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

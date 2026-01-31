@@ -39,6 +39,9 @@ export function Navbar() {
             <Link href={ROUTES.search} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-tour="search">
               Search
             </Link>
+            <Link href={ROUTES.askCFR} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Compliance Intelligence
+            </Link>
             <Link href={ROUTES.docs} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-tour="docs">
               API Docs
             </Link>
@@ -103,6 +106,9 @@ export function Navbar() {
             </Link>
             <Link href={ROUTES.search} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               Search
+            </Link>
+            <Link href={ROUTES.askCFR} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+              Compliance Intelligence
             </Link>
             <Link href={ROUTES.docs} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               API Docs

@@ -112,10 +112,13 @@ export const cfrSections = mysqlTable("cfr_sections", {
   sectionNumber: varchar("section_number", { length: 50 }).notNull(),
   subject: text("subject").notNull(),
   content: text("content").notNull(),
+  embedding: text("embedding"),
+  embedding_updated_at: timestamp("embedding_updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   partSectionIdx: index("part_section_idx").on(table.partId, table.sectionNumber),
   uniquePartSection: unique("unique_part_section").on(table.partId, table.sectionNumber),
+  embeddingUpdatedIdx: index("embedding_updated_idx").on(table.embedding_updated_at),
 }));
 
 export type CfrSection = typeof cfrSections.$inferSelect;

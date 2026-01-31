@@ -29,11 +29,12 @@ import {
   Code2,
   Briefcase,
   CheckCircle2,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 
 const TOUR_STORAGE_KEY = "cfr_tour_completed";
-const TOUR_VERSION = "8";
+const TOUR_VERSION = "10";
 
 interface TourStep {
   title: string;
@@ -184,6 +185,22 @@ const STEPS: TourStep[] = [
     category: "Use Case",
     scenario:
       "INSPECTION PREP: OSHA announced a site visit. Search 'written program' in Title 29 to identify which safety programs require documented procedures. Cross-check your safety manual against each cited section.",
+  },
+  {
+    title: "Compliance Intelligence",
+    description:
+      "Click the chatbot icon to ask questions about U.S. federal regulations. Get instant answers with CFR citations. Powered by GPT-4 and RAG, searching 30+ years of regulatory data.",
+    tip: "Try questions like 'What are FDA electronic signature requirements?' or 'How do I comply with EPA stormwater permits?' The AI retrieves relevant CFR sections, synthesizes answers, and provides source citations with similarity scores.",
+    icon: Bot,
+    target: "chatbot-icon",
+    category: "Intelligence",
+    examples: [
+      '"What are FDA requirements for electronic signatures?"',
+      '"How do I comply with EPA stormwater permits?"',
+      '"What changed in 21 CFR 820 between 2016 and 2023?"',
+    ],
+    scenario:
+      "USE CASE: You need to understand FDA validation requirements for a new quality system. Instead of manually searching through hundreds of CFR sections, ask the AI: 'What are FDA validation requirements for quality systems?' Get a synthesized answer with citations to 21 CFR 820.75, 820.70, and related sections—all in seconds.",
   },
   {
     title: "API: Programmatic Access",

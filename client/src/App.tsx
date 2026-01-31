@@ -7,11 +7,13 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { TourProvider, useTour } from "./contexts/TourContext";
 import { TourGuide } from "./components/TourGuide";
+import { ChatbotIcon } from "./components/ChatbotIcon";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROUTES } from "./routes";
 
 const Home = lazy(() => import("./pages/Home"));
 const Search = lazy(() => import("./pages/Search"));
+const AskCFR = lazy(() => import("./pages/AskCFR"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CFRBrowser = lazy(() => import("./pages/CFRBrowser"));
@@ -48,6 +50,11 @@ function Router() {
             <Search />
           </ProtectedRoute>
         </Route>
+        <Route path={ROUTES.askCFR}>
+          <ProtectedRoute>
+            <AskCFR />
+          </ProtectedRoute>
+        </Route>
         <Route path={ROUTES.docs}>
           <ProtectedRoute>
             <ApiDocs />
@@ -70,6 +77,7 @@ function TourGate() {
   return (
     <>
       <TourGuide open={tourOpen} onOpenChange={setTourOpen} resetStep />
+      <ChatbotIcon />
       <TooltipProvider>
         <Toaster />
         <Router />
