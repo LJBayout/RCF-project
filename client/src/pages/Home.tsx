@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/Navbar";
 import { Link } from "wouter";
+import { ROUTES } from "@/routes";
 import { Search, Zap, Shield, Code, Database, TrendingUp, Check } from "lucide-react";
 
 export default function Home() {
@@ -10,8 +11,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="py-20 md:py-32 bg-gradient-to-b from-background to-muted/20">
+      {/* Hero Section — padding 50% larger than default */}
+      <section className="py-[7.5rem] md:py-48 bg-gradient-to-b from-background to-muted/20">
         <div className="container">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <Badge variant="secondary" className="mb-4">
@@ -25,20 +26,17 @@ export default function Home() {
               Powerful API and search platform for all 50 titles of the CFR. Get instant access to structured regulatory data with lightning-fast search capabilities.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/browse">
+              <Link href={ROUTES.browse}>
                 <Button size="lg" className="text-base">
                   Browse CFR Data
                 </Button>
               </Link>
-              <Link href="/search">
+              <Link href={ROUTES.search}>
                 <Button size="lg" variant="outline" className="text-base">
                   Try Search Demo
                 </Button>
               </Link>
             </div>
-            <p className="text-sm text-muted-foreground">
-              No credit card required • 100 free requests per day
-            </p>
           </div>
         </div>
       </section>
@@ -269,7 +267,7 @@ export default function Home() {
             <Button size="lg" variant="secondary">
               Start Free Trial
             </Button>
-            <Link href="/docs">
+            <Link href={ROUTES.docs}>
               <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10">
                 View Documentation
               </Button>
@@ -291,10 +289,10 @@ export default function Home() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/#features">Features</Link></li>
-                <li><Link href="/#pricing">Pricing</Link></li>
-                <li><Link href="/docs">API Docs</Link></li>
-                <li><Link href="/search">Search</Link></li>
+                <li><Link href={ROUTES.homeHash("features")}>Features</Link></li>
+                <li><Link href={ROUTES.homeHash("pricing")}>Pricing</Link></li>
+                <li><Link href={ROUTES.docs}>API Docs</Link></li>
+                <li><Link href={ROUTES.search}>Search</Link></li>
               </ul>
             </div>
             <div>

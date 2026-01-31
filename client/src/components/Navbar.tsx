@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import { FileText, Menu, X, LogOut, User } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ROUTES } from "@/routes";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,7 +12,7 @@ export function Navbar() {
 
   const handleLogout = () => {
     logout();
-    setLocation("/login");
+    setLocation(ROUTES.login);
   };
 
   return (
@@ -19,23 +20,23 @@ export function Navbar() {
       <div className="container">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+          <Link href={ROUTES.home} className="flex items-center gap-2 font-bold text-xl">
             <FileText className="h-6 w-6 text-primary" />
             <span>CFR Data</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/browse" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.browse} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Browse CFR
             </Link>
-            <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.search} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Search
             </Link>
-            <Link href="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.docs} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               API Docs
             </Link>
-            <Link href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.homeHash("pricing")} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
               Pricing
             </Link>
           </div>
@@ -48,7 +49,7 @@ export function Navbar() {
                   <User className="h-4 w-4" />
                   <span>{user?.username}</span>
                 </div>
-                <Link href="/dashboard">
+                <Link href={ROUTES.dashboard}>
                   <Button variant="ghost" size="sm">
                     Dashboard
                   </Button>
@@ -59,7 +60,7 @@ export function Navbar() {
                 </Button>
               </>
             ) : (
-              <Link href="/login">
+              <Link href={ROUTES.login}>
                 <Button size="sm">
                   Login
                 </Button>
@@ -83,20 +84,20 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t">
-            <Link href="/browse" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link href={ROUTES.browse} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               Browse CFR
             </Link>
-            <Link href="/search" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link href={ROUTES.search} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               Search
             </Link>
-            <Link href="/docs" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link href={ROUTES.docs} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               API Docs
             </Link>
-            <Link href="/#pricing" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+            <Link href={ROUTES.homeHash("pricing")} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               Pricing
             </Link>
             <div className="pt-3 space-y-2">
-              <Link href="/dashboard">
+              <Link href={ROUTES.dashboard}>
                 <Button variant="outline" className="w-full" size="sm">
                   Dashboard
                 </Button>
@@ -118,7 +119,7 @@ export function Navbar() {
                   </Button>
                 </>
               ) : (
-                <Link href="/login">
+                <Link href={ROUTES.login}>
                   <Button className="w-full" size="sm">
                     Login
                   </Button>

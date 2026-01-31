@@ -28,9 +28,9 @@ export const cfrRouter = router({
 
   /** Um título com suas partes (sem seções). */
   getTitle: publicProcedure
-    .input(z.object({ 
+    .input(z.object({
       titleNumber: z.number().int().positive(),
-      year: z.number().int().min(1990).max(2030).optional()
+      year: z.number().int().min(1970).max(2030).optional(),
     }))
     .query(async ({ input }) => cfr.getTitle(input.titleNumber, input.year)),
 
@@ -56,7 +56,7 @@ export const cfrRouter = router({
 
   /** Lista títulos, opcionalmente filtrados por ano. */
   listTitles: publicProcedure
-    .input(z.object({ year: z.number().int().min(1990).max(2030).optional() }).optional())
+    .input(z.object({ year: z.number().int().min(1970).max(2030).optional() }).optional())
     .query(async ({ input }) => cfr.listTitles(input?.year)),
 
   /** Real DB counts: latest titles and total sections (for hero stats). */

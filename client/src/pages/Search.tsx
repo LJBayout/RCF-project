@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search as SearchIcon, Filter } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
+import { ROUTES } from "@/routes";
 
 export default function Search() {
   const [query, setQuery] = useState("");
@@ -149,7 +150,7 @@ export default function Search() {
                       {result.content}
                     </p>
                     <Button variant="link" className="mt-2 p-0 h-auto" asChild>
-                      <a href={`/docs#section-${result.id}`}>View full regulation →</a>
+                      <a href={ROUTES.docsHash(`section-${result.id}`)}>View full regulation →</a>
                     </Button>
                   </CardContent>
                 </Card>

@@ -131,7 +131,8 @@ export async function getOrSetCache<T>(
     const cached = await redis.get(key);
     if (cached) {
       if (process.env.NODE_ENV === "development") {
-        console.log(`[Cache] HIT: ${key}`);
+        const ttl = await redis.ttl(key);
+        console.log(`[Cache] HIT: ${key} (TTL remaining: ${ttl}s)`);
       }
       return JSON.parse(cached) as T;
     }
@@ -144,7 +145,15 @@ export async function getOrSetCache<T>(
     const value = await computeFn();
 
     // Store in cache
-    await redis.setex(key, ttlSeconds, JSON.stringify(value));
+    try {
+      const serialized = JSON.stringify(value);
+      await redis.setex(key, ttlSeconds, serialized);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[Cache] SET: ${key} (TTL: ${ttlSeconds}s, size: ${serialized.length} bytes)`);
+      }
+    } catch (setError: any) {
+      console.warn(`[Cache] Failed to set cache for key ${key}:`, setError?.message || setError);
+    }
 
     return value;
   } catch (error: any) {

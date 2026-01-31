@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { ROUTES } from "@/routes";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -24,7 +25,7 @@ export default function Login() {
     const success = await login(username, password);
 
     if (success) {
-      setLocation("/");
+      setLocation(ROUTES.home);
     } else {
       setError("Invalid username or password");
       setPassword("");

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "../contexts/AuthContext";
+import { ROUTES } from "@/routes";
 import { Spinner } from "./ui/spinner";
 
 interface ProtectedRouteProps {
@@ -13,7 +14,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      setLocation("/login");
+      setLocation(ROUTES.login);
     }
   }, [isAuthenticated, isLoading, setLocation]);
 

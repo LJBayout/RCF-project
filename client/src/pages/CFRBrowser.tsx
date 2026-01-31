@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams, useSearch, useLocation } from "wouter";
 import { trpc } from "../lib/trpc";
+import { ROUTES } from "@/routes";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -23,13 +25,48 @@ import {
   DialogDescription,
 } from "../components/ui/dialog";
 import { Navbar } from "../components/Navbar";
+import { Link } from "wouter";
+
+function parseYearFromSearch(search: string): number | null {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const y = params.get("year");
+  if (y == null) return null;
+  const n = parseInt(y, 10);
+  return Number.isNaN(n) ? null : n;
+}
 
 export default function CFRBrowser() {
+  const params = useParams<{ titleNumber?: string; partNumber?: string }>();
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTitle, setSelectedTitle] = useState<number | null>(null);
   const [selectedPart, setSelectedPart] = useState<{ titleNumber: number; partNumber: number } | null>(null);
   const [activeSearch, setActiveSearch] = useState("");
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  // Sync URL (assured CFR title/part links) → state
+  useEffect(() => {
+    const tn = params?.titleNumber;
+    const pn = params?.partNumber;
+    const yearFromQuery = parseYearFromSearch(search);
+    if (yearFromQuery != null) setSelectedYear(yearFromQuery);
+    if (tn != null) {
+      const titleNum = parseInt(tn, 10);
+      if (!Number.isNaN(titleNum)) {
+        setSelectedTitle(titleNum);
+        if (pn != null) {
+          const partNum = parseInt(pn, 10);
+          if (!Number.isNaN(partNum)) setSelectedPart({ titleNumber: titleNum, partNumber: partNum });
+          else setSelectedPart(null);
+        } else setSelectedPart(null);
+      }
+    } else {
+      setSelectedTitle(null);
+      setSelectedPart(null);
+    }
+  }, [params?.titleNumber, params?.partNumber, search]);
 
   const { data: years = [] } = trpc.cfr.listYears.useQuery();
   const { data: coverage } = trpc.cfr.getCoverage.useQuery();
@@ -56,34 +93,41 @@ export default function CFRBrowser() {
     e.preventDefault();
     if (searchQuery.trim()) {
       setActiveSearch(searchQuery.trim());
-      setSelectedTitle(null);
-      setSelectedPart(null);
+      setLocation(ROUTES.browse);
     }
   };
 
-  const handleTitleClick = (titleNumber: number, year: number) => {
-    if (titleNumber) {
-      setSelectedTitle(titleNumber);
-      setSelectedPart(null);
-      setActiveSearch("");
-      if (selectedYear === null || selectedYear !== year) setSelectedYear(year);
-    }
-  };
-
-  const handlePartClick = (titleNumber: number, partNumber: number) => {
-    if (titleNumber && partNumber) setSelectedPart({ titleNumber, partNumber });
+  const handlePartClick = (titleNumber: number, partNumber: number, year?: number) => {
+    if (titleNumber && partNumber) setLocation(ROUTES.browsePart(titleNumber, partNumber, year));
   };
 
   const closeTitleDialog = () => {
-    setSelectedTitle(null);
-    setSelectedPart(null);
+    setLocation(ROUTES.browse);
   };
 
   const closePartDialog = () => {
-    setSelectedPart(null);
+    if (titleData) setLocation(ROUTES.browseTitle(titleData.titleNumber, titleData.year));
+    else setLocation(ROUTES.browse);
   };
 
-  const displayTitles = titles ?? [];
+  // Normalize: ensure array; coerce titleNumber/year from number or string so every card renders
+  const rawTitles = Array.isArray(titles) ? titles : [];
+  const displayTitles = rawTitles
+    .map((t) => {
+      if (t == null || typeof t !== "object") return null;
+      const r = t as Record<string, unknown>;
+      const n = typeof r.titleNumber === "number" ? r.titleNumber : Number(r.titleNumber);
+      const y = typeof r.year === "number" ? r.year : Number(r.year);
+      if (Number.isNaN(n) || n < 1 || n > 50 || Number.isNaN(y)) return null;
+      return {
+        id: typeof r.id === "number" ? r.id : undefined,
+        titleNumber: n,
+        year: y,
+        name: typeof r.name === "string" ? r.name : (r.name != null ? String(r.name) : null),
+        subject: typeof r.subject === "string" ? r.subject : (r.subject != null ? String(r.subject) : null),
+      };
+    })
+    .filter((t): t is NonNullable<typeof t> => t != null);
   const titleCount = selectedYear != null ? displayTitles.length : (coverage?.titlesCount ?? displayTitles.length);
   const sectionsCount = coverage?.sectionsCount ?? 0;
   const sectionsDisplay = sectionsCount >= 1e6 ? `${(sectionsCount / 1e6).toFixed(2)}M` : sectionsCount.toLocaleString();
@@ -148,8 +192,7 @@ export default function CFRBrowser() {
                         value={selectedYear != null ? String(selectedYear) : "latest"}
                         onValueChange={(v) => {
                           setSelectedYear(v === "latest" ? null : Number(v));
-                          setSelectedTitle(null);
-                          setSelectedPart(null);
+                          setLocation(v === "latest" ? ROUTES.browse : `${ROUTES.browse}?year=${v}`);
                         }}
                       >
                         <SelectTrigger className="w-[200px] md:w-[240px] mt-1.5 bg-white hover:bg-white/95 border-0 text-slate-900 shadow-lg h-11 font-medium">
@@ -160,9 +203,12 @@ export default function CFRBrowser() {
                             <span className="font-semibold">Latest Versions</span>
                             <Badge variant="outline" className="ml-2 text-xs">Most Recent</Badge>
                           </SelectItem>
-                          {years.sort((a, b) => b - a).map((y) => (
-                            <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
-                          ))}
+                          {(Array.isArray(years) ? years : [])
+                            .filter((y): y is number => typeof y === "number" && !Number.isNaN(y))
+                            .sort((a, b) => b - a)
+                            .map((y) => (
+                              <SelectItem key={y} value={String(y)}>Year {y}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -220,28 +266,30 @@ export default function CFRBrowser() {
                   <ScrollArea className="h-[calc(100vh-20rem)] min-h-[400px] w-full">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-6 pb-4">
                       {displayTitles.map((title, idx) => {
-                        const uniqueKey = title.id != null && title.id > 0 
-                          ? `title-${title.id}` 
-                          : `title-${title.titleNumber}-${title.year}-${idx}`;
+                        const num = title.titleNumber;
+                        const yr = title.year;
+                        const uniqueKey = title.id != null && title.id > 0
+                          ? `title-${title.id}`
+                          : `title-${num}-${yr}-${idx}`;
+                        const href = ROUTES.browseTitle(num, yr);
                         return (
-                          <button
+                          <Link
                             key={uniqueKey}
-                            type="button"
-                            onClick={() => handleTitleClick(title.titleNumber, title.year)}
-                            className="flex flex-col items-stretch gap-2 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-blue-400 hover:shadow-lg hover:scale-[1.02] transition-all text-left min-h-[160px] group"
+                            href={href}
+                            className="flex flex-col items-stretch gap-2 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-blue-400 hover:shadow-lg hover:scale-[1.02] transition-all text-left min-h-[160px] group no-underline text-inherit"
                           >
                             <div className="flex items-center justify-between gap-2 shrink-0">
-                              <span className="font-bold text-lg text-blue-600 group-hover:text-blue-700 truncate">Title {title.titleNumber}</span>
+                              <span className="font-bold text-lg text-blue-600 group-hover:text-blue-700 truncate">Title {num}</span>
                               <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
                             </div>
                             <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm shrink-0">
                               <Calendar className="h-4 w-4 shrink-0" />
-                              <span className="font-semibold">{title.year}</span>
+                              <span className="font-semibold">{yr}</span>
                             </div>
                             <span className="text-sm line-clamp-3 leading-snug text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 min-h-[2.5rem] break-words">
                               {title.name ?? "—"}
                             </span>
-                          </button>
+                          </Link>
                         );
                       })}
                     </div>
@@ -337,7 +385,7 @@ export default function CFRBrowser() {
                     <button
                       key={`part-${part.partNumber}-${idx}`}
                       type="button"
-                      onClick={() => handlePartClick(titleData.titleNumber, part.partNumber)}
+                      onClick={() => handlePartClick(titleData.titleNumber, part.partNumber, titleData.year)}
                       className="w-full text-left p-5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-blue-300 hover:bg-blue-50/50 transition-all flex items-center justify-between gap-4"
                     >
                       <div className="min-w-0">
@@ -383,16 +431,16 @@ export default function CFRBrowser() {
             <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-12">
               {partData ? (
                 <div className="space-y-6 pt-6 font-sans text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                  {partData.sections.map((section, idx) => (
-                    <div key={section.id}>
+                  {(partData.sections ?? []).map((section, idx) => (
+                    <div key={section?.id ?? `sec-${idx}`}>
                       {idx > 0 && <Separator className="my-6" />}
                       <div className="space-y-2">
                         <div className="flex items-start gap-3">
-                          <Badge variant="outline" className="shrink-0 text-xs px-2 py-0.5">§ {section.sectionNumber}</Badge>
-                          <h3 className="font-semibold text-sm">{section.subject}</h3>
+                          <Badge variant="outline" className="shrink-0 text-xs px-2 py-0.5">§ {section?.sectionNumber ?? "—"}</Badge>
+                          <h3 className="font-semibold text-sm">{section?.subject ?? "—"}</h3>
                         </div>
                         <p className="whitespace-pre-wrap pl-1 text-slate-700 dark:text-slate-300">
-                          {section.content}
+                          {section?.content ?? ""}
                         </p>
                       </div>
                     </div>

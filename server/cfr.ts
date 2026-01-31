@@ -176,78 +176,94 @@ export async function listYears(): Promise<number[]> {
   );
 }
 
-export async function listTitles(year?: number) {
-  return getOrSetCache(
-    "listTitles",
-    { year: year ?? null },
-    async () => {
-      const database = await db.getDb();
-      if (!database) return [];
+/** Normalize a DB row to a strict title shape (handles raw SQL / Redis / any casing). */
+function normalizeTitleRow(row: unknown): { id: number; titleNumber: number; name: string | null; subject: string | null; year: number } | null {
+  if (row == null || typeof row !== "object") return null;
+  const r = row as Record<string, unknown>;
+  const id = Number(r.id ?? r.ID ?? 0);
+  const titleNumber = Number(r.titleNumber ?? r.title_number ?? 0);
+  const year = Number(r.year ?? r.YEAR ?? 0);
+  if (Number.isNaN(titleNumber) || titleNumber < 1 || Number.isNaN(year)) return null;
+  return {
+    id: Number.isNaN(id) ? 0 : id,
+    titleNumber,
+    name: typeof r.name === "string" ? r.name : (r.name != null ? String(r.name) : null),
+    subject: typeof r.subject === "string" ? r.subject : (r.subject != null ? String(r.subject) : null),
+    year,
+  };
+}
 
-      if (year != null) {
-        // Specific year: show all titles for that year
-        return database
-          .select({
-            id: cfrTitles.id,
-            titleNumber: cfrTitles.titleNumber,
-            name: cfrTitles.name,
-            subject: cfrTitles.subject,
-            year: cfrTitles.year,
-          })
-          .from(cfrTitles)
-          .where(eq(cfrTitles.year, year))
-          .orderBy(cfrTitles.titleNumber);
-      }
-      
-      // All years: show only the LATEST version of each title
-      const sql = `
-        SELECT t1.id, t1.title_number as titleNumber, t1.name, t1.subject, t1.year
-        FROM cfr_titles t1
-        INNER JOIN (
-          SELECT title_number, MAX(year) as max_year
-          FROM cfr_titles
-          GROUP BY title_number
-        ) t2 ON t1.title_number = t2.title_number AND t1.year = t2.max_year
-        ORDER BY t1.title_number
-      `;
-      
-      const results = await database.execute(sql);
-      // Drizzle execute returns [rows, fields] - rows is the first element
-      // Handle both array and object formats
-      let rows: any[] = [];
-      if (Array.isArray(results)) {
-        rows = Array.isArray(results[0]) ? results[0] : (results[0] ? [results[0]] : []);
-      } else if (results && typeof results === 'object' && '0' in results) {
-        rows = Array.isArray(results[0]) ? results[0] : [];
-      }
-      
-      return rows.map((row: any) => ({
-        id: Number(row?.id ?? row?.ID ?? 0),
-        titleNumber: Number(row?.titleNumber ?? row?.title_number ?? row?.titleNumber ?? 0),
-        name: row?.name ?? null,
-        subject: row?.subject ?? null,
-        year: Number(row?.year ?? row?.YEAR ?? 0),
-      }));
-    },
-    1800 // 30 minutes TTL
-  );
+/**
+ * List CFR titles — always from DB (no cache) so cards always render with fresh, consistent data.
+ * Returns a strict shape so the frontend never sees malformed or cached-stale rows.
+ */
+export async function listTitles(year?: number): Promise<{ id: number; titleNumber: number; name: string | null; subject: string | null; year: number }[]> {
+  const database = await db.getDb();
+  if (!database) return [];
+
+  if (year != null) {
+    const rows = await database
+      .select({
+        id: cfrTitles.id,
+        titleNumber: cfrTitles.titleNumber,
+        name: cfrTitles.name,
+        subject: cfrTitles.subject,
+        year: cfrTitles.year,
+      })
+      .from(cfrTitles)
+      .where(eq(cfrTitles.year, year))
+      .orderBy(cfrTitles.titleNumber);
+    const normalized = rows.map((r) => normalizeTitleRow(r)).filter((n): n is NonNullable<typeof n> => n != null);
+    return normalized;
+  }
+
+  // All years: latest version of each title (raw SQL for subquery; normalize every row)
+  const raw = await database.execute(sql`
+    SELECT t1.id, t1.title_number as titleNumber, t1.name, t1.subject, t1.year
+    FROM cfr_titles t1
+    INNER JOIN (
+      SELECT title_number, MAX(year) as max_year
+      FROM cfr_titles
+      GROUP BY title_number
+    ) t2 ON t1.title_number = t2.title_number AND t1.year = t2.max_year
+    ORDER BY t1.title_number
+  `);
+  let rows: unknown[] = [];
+  if (Array.isArray(raw)) {
+    rows = Array.isArray(raw[0]) ? raw[0] : (raw[0] != null ? [raw[0]] : []);
+  } else if (raw && typeof raw === "object" && "0" in raw) {
+    rows = Array.isArray((raw as any)[0]) ? (raw as any)[0] : [];
+  }
+  const out: { id: number; titleNumber: number; name: string | null; subject: string | null; year: number }[] = [];
+  for (const row of rows) {
+    const n = normalizeTitleRow(row);
+    if (n) out.push(n);
+  }
+  return out;
 }
 
 /** Aggregate counts for UI: distinct titles and total sections (same DB Airflow writes to). */
 export async function getCoverage(): Promise<{ titlesCount: number; sectionsCount: number }> {
-  const database = await db.getDb();
-  if (!database) return { titlesCount: 0, sectionsCount: 0 };
+  return getOrSetCache(
+    "getCoverage",
+    {},
+    async () => {
+      const database = await db.getDb();
+      if (!database) return { titlesCount: 0, sectionsCount: 0 };
 
-  // Use Drizzle select + sql so result shape is consistent (mysql2 raw execute varies)
-  const [titlesRow] = await database
-    .select({ c: sql<number>`count(distinct ${cfrTitles.titleNumber})` })
-    .from(cfrTitles)
-    .limit(1);
-  const [sectionsRow] = await database
-    .select({ c: sql<number>`count(*)` })
-    .from(cfrSections)
-    .limit(1);
-  const titlesCount = Number(titlesRow?.c ?? 0);
-  const sectionsCount = Number(sectionsRow?.c ?? 0);
-  return { titlesCount, sectionsCount };
+      // Use Drizzle select + sql so result shape is consistent (mysql2 raw execute varies)
+      const [titlesRow] = await database
+        .select({ c: sql<number>`count(distinct ${cfrTitles.titleNumber})` })
+        .from(cfrTitles)
+        .limit(1);
+      const [sectionsRow] = await database
+        .select({ c: sql<number>`count(*)` })
+        .from(cfrSections)
+        .limit(1);
+      const titlesCount = Number(titlesRow?.c ?? 0);
+      const sectionsCount = Number(sectionsRow?.c ?? 0);
+      return { titlesCount, sectionsCount };
+    },
+    1800 // 30 minutes TTL
+  );
 }
