@@ -1,13 +1,138 @@
+# Dependencies
 node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+out
+*.tsbuildinfo
+
+# Git
 .git
 .gitignore
-*.log
+.gitattributes
+
+# Environment files
 .env
 .env.*
-dist
+!.env.example
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+logs
+*.log.*
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+__mocks__
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+ARCHITECTURE_*.md
+COMPLETE_*.md
+CRITICAL_*.md
+DATA_QUALITY_*.md
+DESIGN_*.md
+DOCKER_*.md
+FILTER_*.md
+INGESTION_*.md
+INTERFACE_*.md
+LAYOUT_*.md
+LOGIN_*.md
+MONITORING_*.md
+MYSQL_*.md
+PARSER_*.md
+SOC2_*.md
+SUCCESS_*.md
+TAG_*.md
+UI_*.md
+VISUALIZATION_*.md
+WEB_*.md
+WHERE_*.md
+XML_*.md
+YEAR_*.md
+
+# Airflow (handled separately)
 airflow/logs
 airflow/data
+airflow/__pycache__
+airflow/dags/__pycache__
+
+# Data files (not needed in container)
 cfr_xmls/
 temp_extract/
 *.xml
 *.zip
+*.csv
+
+# Database files
+*.sql
+!drizzle/**/*.sql
+drop_tables.sql
+create_*.sql
+migrate_*.sql
+soc2_*.sql
+update_*.sql
+
+# Scripts (not needed in container)
+*.sh
+!scripts/backup.sh
+direct_process.py
+monitor_*.sh
+watch_*.sh
+view_*.sh
+open_*.sh
+quick_*.html
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.bak
+*.backup
+
+# Docker files (don't copy into itself)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+
+# Misc
+.cursor
+*.patch
+todo.md
+.prettierignore
+.prettierrc
+.nvmrc
+vitest.config.ts
+tsconfig.json
+components.json

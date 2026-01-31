@@ -1,18 +1,51 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createPool, type Pool } from "mysql2/promise";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
+const HEALTH_CHECK_MS = 30_000;
+
+let _pool: Pool | null = null;
 let _db: ReturnType<typeof drizzle> | null = null;
+let _lastHealthCheck = 0;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!_db && dbUrl) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = createPool({
+        uri: dbUrl,
+        waitForConnections: true,
+        connectionLimit: 10,
+        enableKeepAlive: true,
+        keepAliveInitialDelay: 10_000,
+      });
+      _db = drizzle(_pool);
+      await _db.execute(sql`SELECT 1`);
+      _lastHealthCheck = Date.now();
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
+      if (_pool) {
+        await _pool.end();
+      }
+      _pool = null;
+    }
+  }
+
+  if (_pool && _db && Date.now() - _lastHealthCheck > HEALTH_CHECK_MS) {
+    try {
+      await _pool.query("SELECT 1");
+      _lastHealthCheck = Date.now();
+    } catch (error) {
+      console.warn("[Database] Health check failed, recreating pool:", error);
+      await _pool.end();
+      _pool = null;
+      _db = null;
+      _lastHealthCheck = 0;
+      return getDb();
     }
   }
   return _db;

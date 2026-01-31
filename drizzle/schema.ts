@@ -161,3 +161,19 @@ export const apiUsage = mysqlTable("api_usage", {
 
 export type ApiUsage = typeof apiUsage.$inferSelect;
 export type InsertApiUsage = typeof apiUsage.$inferInsert;
+
+/**
+ * Manus Debug Logs - Browser console, network, and UI events
+ */
+export const manusDebugLogs = mysqlTable("manus_debug_logs", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  logType: varchar("log_type", { length: 50 }).notNull(), // "console" | "network" | "ui"
+  data: text("data").notNull(), // JSON stringified log entry
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+}, (table) => ({
+  logTypeIdx: index("log_type_idx").on(table.logType),
+  timestampIdx: index("timestamp_idx").on(table.timestamp),
+}));
+
+export type ManusDebugLog = typeof manusDebugLogs.$inferSelect;
+export type InsertManusDebugLog = typeof manusDebugLogs.$inferInsert;

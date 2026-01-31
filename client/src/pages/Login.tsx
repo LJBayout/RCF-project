@@ -63,6 +63,7 @@ export default function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 autoFocus
+                autoComplete="username"
                 disabled={isLoading}
               />
             </div>
@@ -76,6 +77,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                autoComplete="current-password"
                 disabled={isLoading}
               />
             </div>

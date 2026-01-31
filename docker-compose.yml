@@ -33,8 +33,11 @@ services:
     environment:
       NODE_ENV: development
       DATABASE_URL: mysql://app:app@mysql:3306/cfr_platform
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - .:/app
@@ -59,10 +62,31 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --protected-mode
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:-redis}
+      - --bind
+      - "0.0.0.0"
+      - --port
+      - "6379"
+    # Not exposing port publicly - only accessible from Docker network
+    # ports:
+    #   - "6379:6379"
     volumes:
       - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - default
 
   postgres:
     image: postgres:15

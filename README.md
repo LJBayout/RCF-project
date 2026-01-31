@@ -43,6 +43,10 @@ Acesso a dados do Code of Federal Regulations (CFR) via API e busca web. **Tudo 
 
 Nada precisa rodar fora do Docker: app, API, Airflow, MySQL, Redis e Postgres estão no `docker-compose.yml`.
 
+**Importante:** O app e o Airflow usam o **mesmo MySQL** (`cfr_platform`). Os títulos/partes/seções que o Airflow ingere aparecem no app quando ambos rodam no Docker. Se você rodar o app **fora** do Docker (ex.: `pnpm dev`), configure no `.env` o mesmo banco: `DATABASE_URL=mysql://app:app@127.0.0.1:3306/cfr_platform` (com o MySQL do Docker em pé e a porta 3306 exposta).
+
+**Cache Redis:** O app usa Redis para cachear respostas dos endpoints CFR (reduz carga no MySQL). Se Redis não estiver configurado ou indisponível, o app funciona normalmente sem cache. Configure `REDIS_URL` ou `REDIS_PASSWORD` no `.env` se rodar o app fora do Docker. TTLs: `listYears` (1h), `listTitles` (30m), `getTitle`/`getPart` (15m).
+
 ---
 
 ## Pipeline CFR (Airflow)

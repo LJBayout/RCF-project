@@ -58,4 +58,7 @@ export const cfrRouter = router({
   listTitles: publicProcedure
     .input(z.object({ year: z.number().int().min(1990).max(2030).optional() }).optional())
     .query(async ({ input }) => cfr.listTitles(input?.year)),
+
+  /** Real DB counts: latest titles and total sections (for hero stats). */
+  getCoverage: publicProcedure.query(() => cfr.getCoverage()),
 });

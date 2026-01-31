@@ -19,34 +19,24 @@ export function Navbar() {
       <div className="container">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/">
-            <a className="flex items-center gap-2 font-bold text-xl">
-              <FileText className="h-6 w-6 text-primary" />
-              <span>CFR Data</span>
-            </a>
+          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
+            <FileText className="h-6 w-6 text-primary" />
+            <span>CFR Data</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/browse">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Browse CFR
-              </a>
+            <Link href="/browse" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Browse CFR
             </Link>
-            <Link href="/search">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Search
-              </a>
+            <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Search
             </Link>
-            <Link href="/docs">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                API Docs
-              </a>
+            <Link href="/docs" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              API Docs
             </Link>
-            <Link href="/#pricing">
-              <a className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Pricing
-              </a>
+            <Link href="/#pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Pricing
             </Link>
           </div>
 
@@ -93,25 +83,17 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t">
-            <Link href="/browse">
-              <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Browse CFR
-              </a>
+            <Link href="/browse" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+              Browse CFR
             </Link>
-            <Link href="/search">
-              <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Search
-              </a>
+            <Link href="/search" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+              Search
             </Link>
-            <Link href="/docs">
-              <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                API Docs
-              </a>
+            <Link href="/docs" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+              API Docs
             </Link>
-            <Link href="/#pricing">
-              <a className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
-                Pricing
-              </a>
+            <Link href="/#pricing" className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
+              Pricing
             </Link>
             <div className="pt-3 space-y-2">
               <Link href="/dashboard">

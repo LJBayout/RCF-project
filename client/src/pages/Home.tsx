@@ -291,10 +291,10 @@ export default function Home() {
             <div>
               <h4 className="font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="/#features"><a>Features</a></Link></li>
-                <li><Link href="/#pricing"><a>Pricing</a></Link></li>
-                <li><Link href="/docs"><a>API Docs</a></Link></li>
-                <li><Link href="/search"><a>Search</a></Link></li>
+                <li><Link href="/#features">Features</Link></li>
+                <li><Link href="/#pricing">Pricing</Link></li>
+                <li><Link href="/docs">API Docs</Link></li>
+                <li><Link href="/search">Search</Link></li>
               </ul>
             </div>
             <div>

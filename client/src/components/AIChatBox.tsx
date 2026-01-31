@@ -308,8 +308,13 @@ export function AIChatBox({
         onSubmit={handleSubmit}
         className="flex gap-2 p-4 border-t bg-background/50 items-end"
       >
+        <label htmlFor="ai-chat-input" className="sr-only">
+          Chat message
+        </label>
         <Textarea
           ref={textareaRef}
+          id="ai-chat-input"
+          name="ai-chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

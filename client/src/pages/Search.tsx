@@ -20,15 +20,20 @@ export default function Search() {
   );
 
   const handleSearch = () => setSearchTerm(query.trim());
-  const displayResults = results.map((r) => ({
-    id: r.id,
-    title: `Title ${r.titleNumber}`,
-    titleName: r.titleName ?? "",
-    part: `Part ${r.partNumber}`,
-    section: r.sectionNumber,
-    subject: r.subject,
-    content: r.content?.slice(0, 300) + (r.content && r.content.length > 300 ? "..." : "") ?? "",
-  }));
+  const displayResults = results.map((r) => {
+    const content = r.content ?? "";
+    const truncatedContent = content.slice(0, 300);
+    const finalContent = truncatedContent + (content.length > 300 ? "..." : "");
+    return {
+      id: r.id,
+      title: `Title ${r.titleNumber}`,
+      titleName: r.titleName ?? "",
+      part: `Part ${r.partNumber}`,
+      section: r.sectionNumber,
+      subject: r.subject,
+      content: finalContent,
+    };
+  });
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -48,8 +53,13 @@ export default function Search() {
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 relative">
+                <label htmlFor="cfr-search-input" className="sr-only">
+                  Search CFR database
+                </label>
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
+                  id="cfr-search-input"
+                  name="cfr-search-input"
                   placeholder="Search regulations, keywords, or section numbers..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
@@ -57,7 +67,7 @@ export default function Search() {
                 />
               </div>
               <Select value={titleFilter} onValueChange={setTitleFilter}>
-                <SelectTrigger className="w-full md:w-[200px]">
+                <SelectTrigger className="w-full md:w-[200px]" aria-label="Filter by title">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="All Titles" />
                 </SelectTrigger>

@@ -47,8 +47,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Log audit event via tRPC
       try {
-        const { trpc } = await import("../lib/trpc");
-        await trpc.auth.logLogin.mutate({ username });
+        const { trpcVanilla } = await import("../lib/trpc");
+        await trpcVanilla.auth.logLogin.mutate({ username });
       } catch (e) {
         console.error("Failed to log audit event:", e);
       }
@@ -58,8 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     // Log failed attempt via tRPC
     try {
-      const { trpc } = await import("../lib/trpc");
-      await trpc.auth.logLoginFailed.mutate({ username });
+      const { trpcVanilla } = await import("../lib/trpc");
+      await trpcVanilla.auth.logLoginFailed.mutate({ username });
     } catch (e) {
       console.error("Failed to log audit event:", e);
     }
@@ -72,8 +72,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("cfr_user");
     
     // Log audit event via tRPC
-    import("../lib/trpc").then(({ trpc }) => {
-      trpc.auth.logLogout.mutate().catch(e => console.error("Failed to log audit event:", e));
+    import("../lib/trpc").then(({ trpcVanilla }) => {
+      trpcVanilla.auth.logLogout.mutate().catch(e => console.error("Failed to log audit event:", e));
     });
   };
 
