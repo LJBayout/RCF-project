@@ -53,11 +53,12 @@ export function ChatbotIcon() {
     },
     onError: (error) => {
       console.error("RAG error:", error);
+      const errorMsg = `I apologize, but I encountered an error: ${error.message}. Please try rephrasing your question or contact support if the issue persists.`;
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `I apologize, but I encountered an error: ${error.message}. Please try rephrasing your question or contact support if the issue persists.`,
+          content: errorMsg,
         },
       ]);
     },
@@ -155,8 +156,7 @@ export function ChatbotIcon() {
                         </Badge>
                       </div>
                       <p className="text-xs font-semibold text-foreground mb-1">
-                        Title {source.titleNumber}, Part {source.partNumber},
-                        Section {source.sectionNumber}
+                        Title {source.titleNumber}, Part {source.partNumber}, Section {source.sectionNumber}
                       </p>
                       <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
                         {source.sectionSubject}

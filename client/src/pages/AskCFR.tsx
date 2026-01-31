@@ -41,11 +41,12 @@ export default function AskCFR() {
     },
     onError: (error) => {
       console.error("RAG error:", error);
+      const errorMsg = `I apologize, but I encountered an error: ${error.message}. Please try rephrasing your question or contact support if the issue persists.`;
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: `I apologize, but I encountered an error: ${error.message}. Please try rephrasing your question or contact support if the issue persists.`,
+          content: errorMsg,
         },
       ]);
     },
@@ -81,8 +82,7 @@ export default function AskCFR() {
           </div>
           <h1 className="text-3xl font-semibold">Compliance Intelligence</h1>
           <p className="text-muted-foreground max-w-2xl">
-            Ask questions about U.S. federal regulations. Get instant answers with CFR citations. 
-            Powered by AI that searches 30+ years of regulatory data.
+            Ask questions about U.S. federal regulations. Get instant answers with CFR citations. Powered by AI that searches 30+ years of regulatory data.
           </p>
         </div>
 
@@ -136,8 +136,7 @@ export default function AskCFR() {
                         </Badge>
                       </div>
                       <p className="text-xs font-semibold text-foreground mb-1">
-                        Title {source.titleNumber}, Part {source.partNumber},
-                        Section {source.sectionNumber}
+                        Title {source.titleNumber}, Part {source.partNumber}, Section {source.sectionNumber}
                       </p>
                       <p className="text-xs text-muted-foreground mb-2">
                         {source.sectionSubject}
@@ -158,10 +157,7 @@ export default function AskCFR() {
 
               <div className="mt-6 pt-4 border-t border-border/60">
                 <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  <strong>How it works:</strong> Our RAG system searches vector
-                  embeddings of CFR sections, retrieves the most relevant
-                  passages, and generates answers using GPT-4. All responses are
-                  grounded in actual regulatory text with citations.
+                  <strong>How it works:</strong> Our RAG system searches vector embeddings of CFR sections, retrieves the most relevant passages, and generates answers using GPT-4. All responses are grounded in actual regulatory text with citations.
                 </p>
               </div>
             </Card>
