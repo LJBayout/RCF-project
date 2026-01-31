@@ -6,6 +6,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, Key, TrendingUp, Users, Copy, Plus, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
+
+function formatTimeAgo(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(date).getTime();
+  const diffMins = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMs / 3_600_000);
+  const diffDays = Math.floor(diffMs / 86_400_000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins} min ago`;
+  if (diffHours < 24) return `${diffHours} hour ago`;
+  return `${diffDays} day ago`;
+}
+
+function formatResetsIn(): string {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setUTCHours(24, 0, 0, 0);
+  const ms = tomorrow.getTime() - now.getTime();
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  return `${h}h ${m}m`;
+}
 
 export default function Dashboard() {
   const [showApiKey, setShowApiKey] = useState(false);
@@ -16,26 +39,25 @@ export default function Dashboard() {
     toast.success("API key copied to clipboard");
   };
 
-  // Mock data
-  const stats = {
-    totalRequests: 1247,
-    requestsToday: 89,
-    remainingQuota: 9911,
-    plan: "Pro"
-  };
+  const { data: stats, isLoading: statsLoading } = trpc.dashboard.getUsageStats.useQuery();
+  const { data: recentRequests = [], isLoading: recentLoading } =
+    trpc.dashboard.getRecentUsage.useQuery({ limit: 10 });
+  const { data: topEndpoints = [], isLoading: topLoading } =
+    trpc.dashboard.getTopEndpoints.useQuery({ limit: 5 });
+  const { data: responseTimes = [], isLoading: responseLoading } =
+    trpc.dashboard.getResponseTimeAverages.useQuery({ limit: 5 });
 
-  const recentRequests = [
-    { id: 1, endpoint: "/api/search/fulltext", method: "GET", status: 200, time: "2ms", timestamp: "2 min ago" },
-    { id: 2, endpoint: "/api/title/19", method: "GET", status: 200, time: "1ms", timestamp: "5 min ago" },
-    { id: 3, endpoint: "/api/section/123", method: "GET", status: 200, time: "3ms", timestamp: "12 min ago" },
-    { id: 4, endpoint: "/api/search/fulltext", method: "GET", status: 200, time: "2ms", timestamp: "18 min ago" },
-    { id: 5, endpoint: "/api/title/21", method: "GET", status: 200, time: "1ms", timestamp: "25 min ago" },
-  ];
+  const loading = statsLoading;
+  const totalRequests = stats?.totalRequests ?? 0;
+  const requestsToday = stats?.requestsToday ?? 0;
+  const remainingQuota = stats?.remainingQuota ?? 10_000;
+  const plan = stats?.plan ?? "Pro";
+  const dailyQuota = 10_000;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
-      
+
       <div className="container py-8">
         {/* Header */}
         <div className="mb-8">
@@ -53,19 +75,23 @@ export default function Dashboard() {
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalRequests.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                {loading ? "—" : totalRequests.toLocaleString()}
+              </div>
               <p className="text-xs text-muted-foreground">All time</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today's Requests</CardTitle>
+              <CardTitle className="text-sm font-medium">Today&apos;s Requests</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.requestsToday}</div>
-              <p className="text-xs text-muted-foreground">+12% from yesterday</p>
+              <div className="text-2xl font-bold">{loading ? "—" : requestsToday}</div>
+              <p className="text-xs text-muted-foreground">
+                {loading ? "—" : `${requestsToday} of ${dailyQuota} daily`}
+              </p>
             </CardContent>
           </Card>
 
@@ -75,8 +101,12 @@ export default function Dashboard() {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.remainingQuota.toLocaleString()}</div>
-              <p className="text-xs text-muted-foreground">Resets in 23h 15m</p>
+              <div className="text-2xl font-bold">
+                {loading ? "—" : remainingQuota.toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Resets in {formatResetsIn()}
+              </p>
             </CardContent>
           </Card>
 
@@ -86,7 +116,7 @@ export default function Dashboard() {
               <Key className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.plan}</div>
+              <div className="text-2xl font-bold">{plan}</div>
               <Button variant="link" className="p-0 h-auto text-xs">
                 Upgrade Plan
               </Button>
@@ -96,10 +126,10 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList>
+          <TabsList data-tour="dashboard-tabs">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-            <TabsTrigger value="usage">Usage</TabsTrigger>
+            <TabsTrigger value="usage" data-tour="usage-tab">Usage</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -128,7 +158,8 @@ export default function Dashboard() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Keep your API key secure and never share it publicly. If compromised, regenerate it immediately.
+                  Keep your API key secure and never share it publicly. If compromised, regenerate it
+                  immediately.
                 </p>
               </CardContent>
             </Card>
@@ -137,31 +168,43 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest API requests</CardDescription>
+                <CardDescription>Your latest API requests (from api_usage)</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {recentRequests.map((request) => (
-                    <div
-                      key={request.id}
-                      className="flex items-center justify-between py-3 border-b last:border-0"
-                    >
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="font-mono text-xs">
-                          {request.method}
-                        </Badge>
-                        <span className="font-mono text-sm">{request.endpoint}</span>
+                {recentLoading ? (
+                  <p className="text-sm text-muted-foreground py-4">Loading…</p>
+                ) : recentRequests.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">
+                    No API usage recorded yet. Use the REST API with X-API-Key to see activity here.
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {recentRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between py-3 border-b last:border-0"
+                      >
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {request.method}
+                          </Badge>
+                          <span className="font-mono text-sm">{request.endpoint}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <Badge variant={request.statusCode === 200 ? "secondary" : "destructive"}>
+                            {request.statusCode}
+                          </Badge>
+                          <span className="text-muted-foreground">
+                            {request.responseTime != null ? `${request.responseTime}ms` : "—"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {formatTimeAgo(request.timestamp)}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <Badge variant={request.status === 200 ? "secondary" : "destructive"}>
-                          {request.status}
-                        </Badge>
-                        <span className="text-muted-foreground">{request.time}</span>
-                        <span className="text-muted-foreground">{request.timestamp}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -215,7 +258,7 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>API Usage Statistics</CardTitle>
                 <CardDescription>
-                  Detailed breakdown of your API usage
+                  Detailed breakdown of your API usage (from api_usage)
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -225,13 +268,15 @@ export default function Dashboard() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium">Daily Quota</span>
                       <span className="text-sm text-muted-foreground">
-                        {stats.requestsToday} / 10,000 requests
+                        {requestsToday} / {dailyQuota} requests
                       </span>
                     </div>
                     <div className="w-full bg-muted rounded-full h-2">
                       <div
                         className="bg-primary h-2 rounded-full"
-                        style={{ width: `${(stats.requestsToday / 10000) * 100}%` }}
+                        style={{
+                          width: `${Math.min(100, (requestsToday / dailyQuota) * 100)}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -239,39 +284,43 @@ export default function Dashboard() {
                   {/* Top Endpoints */}
                   <div>
                     <h4 className="font-semibold mb-4">Top Endpoints</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-mono">/api/search/fulltext</span>
-                        <Badge variant="secondary">542 requests</Badge>
+                    {topLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : topEndpoints.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No endpoint usage recorded yet.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {topEndpoints.map((row) => (
+                          <div key={row.endpoint} className="flex items-center justify-between">
+                            <span className="text-sm font-mono">{row.endpoint}</span>
+                            <Badge variant="secondary">{row.count} requests</Badge>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-mono">/api/title/:id</span>
-                        <Badge variant="secondary">389 requests</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-mono">/api/section/:id</span>
-                        <Badge variant="secondary">316 requests</Badge>
-                      </div>
-                    </div>
+                    )}
                   </div>
 
                   {/* Response Times */}
                   <div>
                     <h4 className="font-semibold mb-4">Average Response Times</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Search Endpoints</span>
-                        <Badge variant="secondary">2.3ms</Badge>
+                    {responseLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : responseTimes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No response time data yet.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {responseTimes.map((row) => (
+                          <div key={row.endpoint} className="flex items-center justify-between">
+                            <span className="text-sm font-mono">{row.endpoint}</span>
+                            <Badge variant="secondary">{row.avgMs}ms</Badge>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Title Endpoints</span>
-                        <Badge variant="secondary">1.8ms</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Section Endpoints</span>
-                        <Badge variant="secondary">2.1ms</Badge>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </CardContent>

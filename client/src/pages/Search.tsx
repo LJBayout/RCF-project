@@ -65,10 +65,11 @@ export default function Search() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   className="pl-10"
+                  data-tour="search-input"
                 />
               </div>
               <Select value={titleFilter} onValueChange={setTitleFilter}>
-                <SelectTrigger className="w-full md:w-[200px]" aria-label="Filter by title">
+                <SelectTrigger className="w-full md:w-[200px]" aria-label="Filter by title" data-tour="search-filter">
                   <Filter className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="All Titles" />
                 </SelectTrigger>

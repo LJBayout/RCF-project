@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,8 +6,22 @@ import { Navbar } from "@/components/Navbar";
 import { Link } from "wouter";
 import { ROUTES } from "@/routes";
 import { Search, Zap, Shield, Code, Database, TrendingUp, Check } from "lucide-react";
+import { useTour } from "@/contexts/TourContext";
+import { getTourCompleted } from "@/components/TourGuide";
+
+const TOUR_AUTO_SHOWN_KEY = "cfr_tour_auto_shown";
 
 export default function Home() {
+  const { openTour } = useTour();
+
+  useEffect(() => {
+    if (getTourCompleted()) return;
+    if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(TOUR_AUTO_SHOWN_KEY)) return;
+    sessionStorage.setItem(TOUR_AUTO_SHOWN_KEY, "1");
+    const t = setTimeout(openTour, 600);
+    return () => clearTimeout(t);
+  }, [openTour]);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -54,65 +69,77 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card>
-              <CardHeader>
-                <Search className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Full-Text Search</CardTitle>
-                <CardDescription>
-                  Search across all 50 titles with advanced filtering by title, part, section, and keywords.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.search}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <Search className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Full-Text Search</CardTitle>
+                  <CardDescription>
+                    Search across all 50 titles with advanced filtering by title, part, section, and keywords.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader>
-                <Zap className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Lightning Fast API</CardTitle>
-                <CardDescription>
-                  RESTful API with sub-100ms response times. Get the data you need instantly.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.docs}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <Zap className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Lightning Fast API</CardTitle>
+                  <CardDescription>
+                    RESTful API with sub-100ms response times. Get the data you need instantly.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader>
-                <Database className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Structured Data</CardTitle>
-                <CardDescription>
-                  Clean, normalized JSON responses. No more parsing messy XML or PDF files.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.browse}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <Database className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Structured Data</CardTitle>
+                  <CardDescription>
+                    Clean, normalized JSON responses. No more parsing messy XML or PDF files.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader>
-                <Shield className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Secure & Reliable</CardTitle>
-                <CardDescription>
-                  Enterprise-grade security with 99.9% uptime SLA. Your data is always protected.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.docs}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <Shield className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Secure & Reliable</CardTitle>
+                  <CardDescription>
+                    Enterprise-grade security with 99.9% uptime SLA. Your data is always protected.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader>
-                <Code className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Developer Friendly</CardTitle>
-                <CardDescription>
-                  Comprehensive documentation with code examples in Python, JavaScript, and cURL.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.docs}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <Code className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Developer Friendly</CardTitle>
+                  <CardDescription>
+                    Comprehensive documentation with code examples in Python, JavaScript, and cURL.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
 
-            <Card>
-              <CardHeader>
-                <TrendingUp className="h-10 w-10 text-primary mb-2" />
-                <CardTitle>Usage Analytics</CardTitle>
-                <CardDescription>
-                  Track your API usage with detailed analytics and insights in real-time.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <Link href={ROUTES.dashboard}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer">
+                <CardHeader>
+                  <TrendingUp className="h-10 w-10 text-primary mb-2" />
+                  <CardTitle>Usage Analytics</CardTitle>
+                  <CardDescription>
+                    Track your API usage with detailed analytics and insights in real-time.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
         </div>
       </section>

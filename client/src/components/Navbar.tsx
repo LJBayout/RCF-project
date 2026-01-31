@@ -1,13 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { FileText, Menu, X, LogOut, User } from "lucide-react";
+import { FileText, Menu, X, LogOut, User, Compass } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTour } from "@/contexts/TourContext";
 import { ROUTES } from "@/routes";
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
+  const { openTour } = useTour();
   const [, setLocation] = useLocation();
 
   const handleLogout = () => {
@@ -27,13 +29,17 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href={ROUTES.browse} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Button variant="ghost" size="sm" onClick={openTour} className="text-muted-foreground hover:text-foreground" data-tour="tour-trigger">
+              <Compass className="mr-1.5 h-4 w-4" />
+              Tour
+            </Button>
+            <Link href={ROUTES.browse} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-tour="browse">
               Browse CFR
             </Link>
-            <Link href={ROUTES.search} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.search} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-tour="search">
               Search
             </Link>
-            <Link href={ROUTES.docs} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            <Link href={ROUTES.docs} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors" data-tour="docs">
               API Docs
             </Link>
             <Link href={ROUTES.homeHash("pricing")} className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
@@ -50,7 +56,7 @@ export function Navbar() {
                   <span>{user?.username}</span>
                 </div>
                 <Link href={ROUTES.dashboard}>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" data-tour="dashboard">
                     Dashboard
                   </Button>
                 </Link>
@@ -84,6 +90,14 @@ export function Navbar() {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden py-4 space-y-3 border-t">
+            <button
+              type="button"
+              onClick={() => { openTour(); setMobileMenuOpen(false); }}
+              className="flex w-full items-center gap-2 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Compass className="h-4 w-4" />
+              Tour
+            </button>
             <Link href={ROUTES.browse} className="block py-2 text-sm font-medium text-muted-foreground hover:text-foreground">
               Browse CFR
             </Link>
@@ -98,7 +112,7 @@ export function Navbar() {
             </Link>
             <div className="pt-3 space-y-2">
               <Link href={ROUTES.dashboard}>
-                <Button variant="outline" className="w-full" size="sm">
+                <Button variant="outline" className="w-full" size="sm" data-tour="dashboard">
                   Dashboard
                 </Button>
               </Link>

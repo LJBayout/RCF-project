@@ -5,6 +5,8 @@ import { Suspense, lazy } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { TourProvider, useTour } from "./contexts/TourContext";
+import { TourGuide } from "./components/TourGuide";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROUTES } from "./routes";
 
@@ -63,15 +65,27 @@ function Router() {
   );
 }
 
+function TourGate() {
+  const { tourOpen, setTourOpen } = useTour();
+  return (
+    <>
+      <TourGuide open={tourOpen} onOpenChange={setTourOpen} resetStep />
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
+    </>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
+          <TourProvider>
+            <TourGate />
+          </TourProvider>
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>

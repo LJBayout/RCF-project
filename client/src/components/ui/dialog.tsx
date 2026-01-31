@@ -93,10 +93,13 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  skipOverlay = false,
   onEscapeKeyDown,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
+  /** When true, do not render the overlay (e.g. for custom tour spotlight). */
+  skipOverlay?: boolean;
 }) {
   const { isComposing } = useDialogComposition();
   const fallbackDescId = React.useId();
@@ -126,7 +129,7 @@ function DialogContent({
 
   return (
     <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay />
+      {!skipOverlay && <DialogOverlay />}
       <DialogPrimitive.Content
         {...props}
         data-slot="dialog-content"
