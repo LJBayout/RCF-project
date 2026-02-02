@@ -17,6 +17,7 @@ const AskCFR = lazy(() => import("./pages/AskCFR"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const CFRBrowser = lazy(() => import("./pages/CFRBrowser"));
+const RAGAdmin = lazy(() => import("./pages/RAGAdmin"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -53,6 +54,11 @@ function Router() {
         <Route path={ROUTES.askCFR}>
           <ProtectedRoute>
             <AskCFR />
+          </ProtectedRoute>
+        </Route>
+        <Route path={ROUTES.ragAdmin}>
+          <ProtectedRoute>
+            <RAGAdmin />
           </ProtectedRoute>
         </Route>
         <Route path={ROUTES.docs}>

@@ -201,8 +201,8 @@ export default function CFRBrowser() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="latest">
-                            <span className="font-semibold">Latest Versions</span>
-                            <Badge variant="outline" className="ml-2 text-xs">Most Recent</Badge>
+                            <span className="font-semibold">All Years (Latest)</span>
+                            <Badge variant="outline" className="ml-2 text-xs">Current</Badge>
                           </SelectItem>
                           {(Array.isArray(years) ? years : [])
                             .filter((y): y is number => typeof y === "number" && !Number.isNaN(y))
@@ -212,6 +212,7 @@ export default function CFRBrowser() {
                             ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-white/70 mt-1.5">Shows most recent version from any year</p>
                     </div>
                   </div>
                   <div className="flex gap-4" data-tour="browse-stats">
@@ -263,9 +264,9 @@ export default function CFRBrowser() {
                     <p>No titles available yet.</p>
                     <p className="text-sm mt-2">Data is still being ingested...</p>
                   </div>
-                ) : displayTitles.length > 0 ? (
+                ) : (
                   <ScrollArea className="h-[calc(100vh-20rem)] min-h-[400px] w-full">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 px-6 pb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 px-6 pb-4">
                       {displayTitles.map((title, idx) => {
                         const num = title.titleNumber;
                         const yr = title.year;
@@ -274,32 +275,45 @@ export default function CFRBrowser() {
                           : `title-${num}-${yr}-${idx}`;
                         const href = ROUTES.browseTitle(num, yr);
                         return (
-                          <Link
+                          <Card
                             key={uniqueKey}
-                            href={href}
-                            className="flex flex-col items-stretch gap-2 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 hover:border-blue-400 hover:shadow-lg hover:scale-[1.02] transition-all text-left min-h-[160px] group no-underline text-inherit"
+                            className="flex flex-col border-2 hover:border-blue-400 hover:shadow-xl transition-all group"
                           >
-                            <div className="flex items-center justify-between gap-2 shrink-0">
-                              <span className="font-bold text-lg text-blue-600 group-hover:text-blue-700 truncate">Title {num}</span>
-                              <ChevronRight className="h-4 w-4 text-slate-400 group-hover:text-blue-600 shrink-0" />
-                            </div>
-                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm shrink-0">
-                              <Calendar className="h-4 w-4 shrink-0" />
-                              <span className="font-semibold">{yr}</span>
-                            </div>
-                            <span className="text-sm line-clamp-3 leading-snug text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100 min-h-[2.5rem] break-words">
-                              {title.name ?? "—"}
-                            </span>
-                          </Link>
+                            <CardHeader className="pb-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <Badge className="text-base px-3 py-1 bg-blue-600 hover:bg-blue-700">
+                                  Title {num}
+                                </Badge>
+                                <Badge variant="outline" className="text-xs">
+                                  {yr}
+                                </Badge>
+                              </div>
+                              <CardTitle className="text-lg leading-tight line-clamp-2 min-h-[3rem]">
+                                {title.name ?? "—"}
+                              </CardTitle>
+                              {title.subject && (
+                                <CardDescription className="text-sm line-clamp-2 mt-2">
+                                  {title.subject}
+                                </CardDescription>
+                              )}
+                            </CardHeader>
+                            <CardContent className="flex-1 flex flex-col justify-end pt-0">
+                              <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm mb-4">
+                                <FileText className="h-4 w-4" />
+                                <span>Contains regulatory parts</span>
+                              </div>
+                              <Link href={href} className="no-underline">
+                                <Button className="w-full group-hover:bg-blue-700" size="sm">
+                                  View Details
+                                  <ChevronRight className="h-4 w-4 ml-1" />
+                                </Button>
+                              </Link>
+                            </CardContent>
+                          </Card>
                         );
                       })}
                     </div>
                   </ScrollArea>
-                ) : (
-                  <div className="text-center py-12 text-slate-500 px-6">
-                    <p>No titles found.</p>
-                    <p className="text-sm mt-2">Try selecting a different year or check if data is being ingested.</p>
-                  </div>
                 )}
               </CardContent>
             </Card>
@@ -310,7 +324,7 @@ export default function CFRBrowser() {
         {activeSearch && (
           <Card className="shadow-lg">
             <CardHeader>
-                  <CardTitle>Search Results</CardTitle>
+              <CardTitle>Search Results</CardTitle>
               <CardDescription>
                 {searchLoading ? "Searching..." : `Found ${searchResults?.length ?? 0} results for "${activeSearch}"`}
               </CardDescription>
@@ -326,8 +340,8 @@ export default function CFRBrowser() {
                 ) : searchResults?.length ? (
                   <div className="space-y-4">
                     {searchResults.map((result, idx) => {
-                      const resultKey = result.id != null && result.id > 0 
-                        ? `result-${result.id}` 
+                      const resultKey = result.id != null && result.id > 0
+                        ? `result-${result.id}`
                         : `result-${result.titleNumber}-${result.partNumber}-${result.sectionNumber}-${idx}`;
                       return (
                         <Card key={resultKey} className="hover:shadow-md transition-shadow">
