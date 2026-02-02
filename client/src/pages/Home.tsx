@@ -25,7 +25,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      
+
       {/* Hero Section — padding 50% larger than default */}
       <section className="py-[7.5rem] md:py-48 bg-gradient-to-b from-background to-muted/20">
         <div className="container">
@@ -136,6 +136,21 @@ export default function Home() {
                   <CardTitle>Usage Analytics</CardTitle>
                   <CardDescription>
                     Track your API usage with detailed analytics and insights in real-time.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href={ROUTES.ragAdmin}>
+              <Card className="h-full transition-colors hover:bg-muted/50 cursor-pointer border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <div className="flex items-center justify-between mb-2">
+                    <Database className="h-10 w-10 text-primary" />
+                    <Badge variant="outline" className="border-primary text-primary">Admin</Badge>
+                  </div>
+                  <CardTitle>RAG Operations</CardTitle>
+                  <CardDescription>
+                    Monitor vector ingestion status and manage critical knowledge base updates.
                   </CardDescription>
                 </CardHeader>
               </Card>

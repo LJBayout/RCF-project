@@ -18,6 +18,7 @@ export const ROUTES = {
     `/browse/title/${titleNumber}/part/${partNumber}${year != null ? `?year=${year}` : ""}`,
   search: "/search",
   askCFR: "/ask",
+  ragAdmin: "/admin/rag",
   docs: "/docs",
   dashboard: "/dashboard",
   notFound: "/404",

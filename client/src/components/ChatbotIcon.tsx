@@ -96,13 +96,13 @@ export function ChatbotIcon() {
         <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col">
           <SheetHeader className="px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <div className="flex items-center gap-3 flex-1">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Bot className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <SheetTitle>Compliance Intelligence</SheetTitle>
-                  <SheetDescription className="text-xs">
+                  <SheetDescription className="text-sm mt-0.5 whitespace-normal">
                     Ask questions about U.S. federal regulations
                   </SheetDescription>
                 </div>
