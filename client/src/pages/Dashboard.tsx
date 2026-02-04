@@ -1,12 +1,29 @@
 import { Navbar } from "@/components/Navbar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Key, TrendingUp, Users, Copy, Plus, Eye, EyeOff } from "lucide-react";
+import {
+  Activity,
+  Key,
+  TrendingUp,
+  Users,
+  Copy,
+  Plus,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { Link } from "wouter";
+import { ROUTES } from "@/routes";
 
 function formatTimeAgo(date: Date): string {
   const now = new Date();
@@ -39,7 +56,8 @@ export default function Dashboard() {
     toast.success("API key copied to clipboard");
   };
 
-  const { data: stats, isLoading: statsLoading } = trpc.dashboard.getUsageStats.useQuery();
+  const { data: stats, isLoading: statsLoading } =
+    trpc.dashboard.getUsageStats.useQuery();
   const { data: recentRequests = [], isLoading: recentLoading } =
     trpc.dashboard.getRecentUsage.useQuery({ limit: 10 });
   const { data: topEndpoints = [], isLoading: topLoading } =
@@ -63,7 +81,10 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-[10px] font-semibold uppercase tracking-wide">
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-semibold uppercase tracking-wide"
+              >
                 Governance
               </Badge>
               <span className="text-[11px] text-muted-foreground font-medium">
@@ -72,8 +93,16 @@ export default function Dashboard() {
             </div>
             <h1 className="text-3xl font-semibold">Dashboard</h1>
             <p className="text-muted-foreground max-w-2xl">
-              Monitor request volume, quota health, and endpoint performance to keep compliance operations predictable and auditable.
+              Monitor request volume, quota health, and endpoint performance to
+              keep compliance operations predictable and auditable.
             </p>
+            <div className="flex flex-wrap gap-3 pt-2">
+              <Link href={ROUTES.ragAdmin}>
+                <Button variant="outline" size="sm">
+                  RAG Ingestion Monitor
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -81,7 +110,9 @@ export default function Dashboard() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Requests
+              </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -94,11 +125,15 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today&apos;s Requests</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Today&apos;s Requests
+              </CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{loading ? "—" : requestsToday}</div>
+              <div className="text-2xl font-bold">
+                {loading ? "—" : requestsToday}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {loading ? "—" : `${requestsToday} of ${dailyQuota} daily`}
               </p>
@@ -107,7 +142,9 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Remaining Quota</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Remaining Quota
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -122,7 +159,9 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Current Plan</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Current Plan
+              </CardTitle>
               <Key className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -139,7 +178,9 @@ export default function Dashboard() {
           <TabsList data-tour="dashboard-tabs">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-            <TabsTrigger value="usage" data-tour="usage-tab">Usage</TabsTrigger>
+            <TabsTrigger value="usage" data-tour="usage-tab">
+              Usage
+            </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
@@ -155,12 +196,18 @@ export default function Dashboard() {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-muted p-3 rounded-lg font-mono text-sm flex items-center justify-between">
-                    <span>{showApiKey ? mockApiKey : "••••••••••••••••••••••••"}</span>
+                    <span>
+                      {showApiKey ? mockApiKey : "••••••••••••••••••••••••"}
+                    </span>
                     <button
                       onClick={() => setShowApiKey(!showApiKey)}
                       className="text-muted-foreground hover:text-foreground"
                     >
-                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showApiKey ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   <Button variant="outline" size="icon" onClick={copyApiKey}>
@@ -168,8 +215,8 @@ export default function Dashboard() {
                   </Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Keep your API key secure and never share it publicly. If compromised, regenerate it
-                  immediately.
+                  Keep your API key secure and never share it publicly. If
+                  compromised, regenerate it immediately.
                 </p>
               </CardContent>
             </Card>
@@ -178,34 +225,50 @@ export default function Dashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Recent Activity</CardTitle>
-                <CardDescription>Your latest API requests (from api_usage)</CardDescription>
+                <CardDescription>
+                  Your latest API requests (from api_usage)
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {recentLoading ? (
                   <p className="text-sm text-muted-foreground py-4">Loading…</p>
                 ) : recentRequests.length === 0 ? (
                   <p className="text-sm text-muted-foreground py-4">
-                    No API usage recorded yet. Use the REST API with X-API-Key to see activity here.
+                    No API usage recorded yet. Use the REST API with X-API-Key
+                    to see activity here.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {recentRequests.map((request) => (
+                    {recentRequests.map(request => (
                       <div
                         key={request.id}
                         className="flex items-center justify-between py-3 border-b last:border-0"
                       >
                         <div className="flex items-center gap-4">
-                          <Badge variant="outline" className="font-mono text-xs">
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-xs"
+                          >
                             {request.method}
                           </Badge>
-                          <span className="font-mono text-sm">{request.endpoint}</span>
+                          <span className="font-mono text-sm">
+                            {request.endpoint}
+                          </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
-                          <Badge variant={request.statusCode === 200 ? "secondary" : "destructive"}>
+                          <Badge
+                            variant={
+                              request.statusCode === 200
+                                ? "secondary"
+                                : "destructive"
+                            }
+                          >
                             {request.statusCode}
                           </Badge>
                           <span className="text-muted-foreground">
-                            {request.responseTime != null ? `${request.responseTime}ms` : "—"}
+                            {request.responseTime != null
+                              ? `${request.responseTime}ms`
+                              : "—"}
                           </span>
                           <span className="text-muted-foreground">
                             {formatTimeAgo(request.timestamp)}
@@ -227,7 +290,8 @@ export default function Dashboard() {
                   <div>
                     <CardTitle>Manage API Keys</CardTitle>
                     <CardDescription>
-                      Create and manage multiple API keys for different applications
+                      Create and manage multiple API keys for different
+                      applications
                     </CardDescription>
                   </div>
                   <Button>
@@ -252,8 +316,16 @@ export default function Dashboard() {
                       <Button variant="outline" size="sm" onClick={copyApiKey}>
                         <Copy className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setShowApiKey(!showApiKey)}>
-                        {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowApiKey(!showApiKey)}
+                      >
+                        {showApiKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -302,10 +374,17 @@ export default function Dashboard() {
                       </p>
                     ) : (
                       <div className="space-y-3">
-                        {topEndpoints.map((row) => (
-                          <div key={row.endpoint} className="flex items-center justify-between">
-                            <span className="text-sm font-mono">{row.endpoint}</span>
-                            <Badge variant="secondary">{row.count} requests</Badge>
+                        {topEndpoints.map(row => (
+                          <div
+                            key={row.endpoint}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-sm font-mono">
+                              {row.endpoint}
+                            </span>
+                            <Badge variant="secondary">
+                              {row.count} requests
+                            </Badge>
                           </div>
                         ))}
                       </div>
@@ -314,7 +393,9 @@ export default function Dashboard() {
 
                   {/* Response Times */}
                   <div>
-                    <h4 className="font-semibold mb-4">Average Response Times</h4>
+                    <h4 className="font-semibold mb-4">
+                      Average Response Times
+                    </h4>
                     {responseLoading ? (
                       <p className="text-sm text-muted-foreground">Loading…</p>
                     ) : responseTimes.length === 0 ? (
@@ -323,9 +404,14 @@ export default function Dashboard() {
                       </p>
                     ) : (
                       <div className="space-y-3">
-                        {responseTimes.map((row) => (
-                          <div key={row.endpoint} className="flex items-center justify-between">
-                            <span className="text-sm font-mono">{row.endpoint}</span>
+                        {responseTimes.map(row => (
+                          <div
+                            key={row.endpoint}
+                            className="flex items-center justify-between"
+                          >
+                            <span className="text-sm font-mono">
+                              {row.endpoint}
+                            </span>
                             <Badge variant="secondary">{row.avgMs}ms</Badge>
                           </div>
                         ))}
