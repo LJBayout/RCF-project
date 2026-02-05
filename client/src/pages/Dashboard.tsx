@@ -16,6 +16,8 @@ import {
   EyeOff,
   Database,
   Sparkles,
+  TrendingUp,
+  Search,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -102,12 +104,34 @@ export default function Dashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="overview" className="space-y-6 mt-8">
-          <TabsList data-tour="dashboard-tabs" className="grid w-full grid-cols-2 sm:grid-cols-4">
-            <TabsTrigger value="overview">Visão geral</TabsTrigger>
-            <TabsTrigger value="data-rag">Dados e RAG</TabsTrigger>
-            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-            <TabsTrigger value="usage" data-tour="usage-tab">
-              Uso
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-200/50">
+            <TabsTrigger value="overview" className="flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Sparkles className="h-4 w-4 text-blue-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Visão Geral</span>
+                <span className="text-[10px] text-slate-500 font-medium">Principais Métricas</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="data-rag" className="flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Database className="h-4 w-4 text-amber-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Dados e RAG</span>
+                <span className="text-[10px] text-slate-500 font-medium">Cobertura Global</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="api-keys" className="flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Plus className="h-4 w-4 text-indigo-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">API Keys</span>
+                <span className="text-[10px] text-slate-500 font-medium">Gestão de Acesso</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="usage" className="flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Uso</span>
+                <span className="text-[10px] text-slate-500 font-medium">Cotas & Atividade</span>
+              </div>
             </TabsTrigger>
           </TabsList>
 

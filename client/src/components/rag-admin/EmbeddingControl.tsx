@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -21,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { RefreshCw, Play, Info, Loader2, Database, Server } from "lucide-react";
+import { RefreshCw, Play, Info, Loader2, Server } from "lucide-react";
 
 export function EmbeddingControl() {
   const [limit, setLimit] = useState<string>("");
@@ -37,15 +36,11 @@ export function EmbeddingControl() {
   const ingestMutation = trpc.rag.ingest.useMutation({
     onSuccess: () => {
       ingestionStatusQuery.refetch();
+      statsQuery.refetch();
     },
   });
 
-  const status = ingestionStatusQuery.data;
   const stats = statsQuery.data;
-  const total = status?.total ?? 0;
-  const completed = status?.completed ?? 0;
-  const missing = status?.missing ?? 0;
-  const progressPct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const postgresChunks = stats?.totalChunks ?? 0;
 
   const handleStart = () => {
@@ -66,67 +61,40 @@ export function EmbeddingControl() {
         <AlertTitle className="text-blue-900">O que alimenta o RAG</AlertTitle>
         <AlertDescription className="text-blue-800 text-sm space-y-2">
           <p>
-            O chat <strong>Ask CFR</strong> usa <strong>duas fontes</strong> ao mesmo tempo:
+            O chat <strong>Ask CFR</strong> usa <strong>uma única fonte</strong>: Postgres (<code className="bg-blue-100 px-1 rounded">cfr_chunks</code>).
           </p>
-          <ul className="list-disc list-inside space-y-1 mt-2">
-            <li>
-              <strong>Postgres</strong> (tabela <code className="bg-blue-100 px-1 rounded">cfr_chunks</code>) — preenchido pelo <strong>Airflow</strong>. Você não controla daqui; mostra só a quantidade disponível.
-            </li>
-            <li>
-              <strong>MySQL</strong> (coluna <code className="bg-blue-100 px-1 rounded">cfr_sections.embedding</code>) — você controla aqui. Ao clicar em &quot;Start ingestion&quot;, as seções CFR recebem embeddings e passam a entrar na busca do RAG.
-            </li>
-          </ul>
           <p className="mt-2 text-xs">
-            A busca combina os resultados das duas fontes e ordena por relevância.
+            Você controla a ingestão aqui (limite, lote, título) ou via <strong>Airflow</strong>. Ambos gravam em Postgres; a busca é só em <code className="bg-blue-100 px-1 rounded">cfr_chunks</code>.
           </p>
         </AlertDescription>
       </Alert>
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">Controle de embeddings (MySQL)</CardTitle>
+          <CardTitle className="flex items-center gap-2">Ingestão para Postgres (cfr_chunks)</CardTitle>
           <CardDescription>
-            Gere embeddings para seções CFR em MySQL (OpenAI → gravado em <code className="bg-muted px-1 rounded">cfr_sections.embedding</code>). Assim você decide qual conteúdo do MySQL entra no RAG.
+            Gere embeddings para seções CFR e grave em Postgres. Seções já presentes em <code className="bg-muted px-1 rounded">cfr_documents</code> são ignoradas (evita duplicar com o Airflow).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Two sources summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
-              <Server className="h-8 w-8 text-slate-600" />
-              <div>
-                <p className="text-sm font-medium text-slate-900">Postgres (Airflow)</p>
-                <p className="text-2xl font-bold text-slate-700">{postgresChunks.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">chunks no RAG · sem controle aqui</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
-              <Database className="h-8 w-8 text-emerald-600" />
-              <div>
-                <p className="text-sm font-medium text-emerald-900">MySQL (você controla)</p>
-                <p className="text-2xl font-bold text-emerald-700">
-                  {completed.toLocaleString()} / {total.toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  seções com embedding · {missing.toLocaleString()} faltando
-                </p>
-              </div>
+          {/* Single source summary */}
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <Server className="h-8 w-8 text-slate-600" />
+            <div>
+              <p className="text-sm font-medium text-slate-900">Postgres (cfr_chunks)</p>
+              <p className="text-2xl font-bold text-slate-700">{postgresChunks.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">chunks no RAG</p>
             </div>
           </div>
 
           {/* Status */}
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Seções MySQL com embedding</span>
-              <span className="font-medium">
-                {completed.toLocaleString()} / {total.toLocaleString()} ({progressPct}%)
-              </span>
+              <span className="text-muted-foreground">Chunks no RAG (Postgres)</span>
+              <span className="font-medium">{postgresChunks.toLocaleString()}</span>
             </div>
-            <Progress value={progressPct} className="h-2" />
             <p className="text-xs text-muted-foreground">
-              {ingestionStatusQuery.isLoading
-                ? "Carregando…"
-                : `${completed.toLocaleString()} com embedding · ${missing.toLocaleString()} faltando`}
+              {ingestionStatusQuery.isLoading ? "Carregando…" : "Única fonte de busca do Ask CFR."}
             </p>
           </div>
 
@@ -185,7 +153,7 @@ export function EmbeddingControl() {
             <div className="flex items-end">
               <Button
                 onClick={handleStart}
-                disabled={isRunning || missing === 0}
+                disabled={isRunning}
                 className="w-full sm:w-auto"
               >
                 {isRunning ? (
@@ -196,21 +164,12 @@ export function EmbeddingControl() {
                 ) : (
                   <>
                     <Play className="mr-2 h-4 w-4" />
-                    Iniciar ingestão (MySQL)
+                    Iniciar ingestão (Postgres)
                   </>
                 )}
               </Button>
             </div>
           </div>
-
-          {missing === 0 && total > 0 && (
-            <Alert className="bg-green-50 border-green-200">
-              <Info className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
-                Todas as seções MySQL já têm embedding. O RAG usa Postgres + MySQL.
-              </AlertDescription>
-            </Alert>
-          )}
 
           {(ingestMutation.data || ingestMutation.isError) && (
             <Alert
@@ -224,7 +183,7 @@ export function EmbeddingControl() {
                 {ingestMutation.isError
                   ? ingestMutation.error.message
                   : ingestMutation.data
-                    ? `${ingestMutation.data.message}: ${ingestMutation.data.success} sucesso, ${ingestMutation.data.failed} falha(s).`
+                    ? `${ingestMutation.data.message}: ${ingestMutation.data.success} sucesso, ${ingestMutation.data.failed} falha(s)${ingestMutation.data.skipped != null ? `, ${ingestMutation.data.skipped} já em Postgres.` : "."}`
                     : null}
               </AlertDescription>
             </Alert>

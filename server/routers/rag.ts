@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
-import { answerQuestion, semanticSearch, generateSectionEmbeddings } from "../_core/rag";
+import { answerQuestion, semanticSearch, ingestSectionsToPostgres } from "../_core/rag";
 import { getDb } from "../db";
 import { cfrSections, cfrParts, cfrTitles } from "../../drizzle/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export const ragRouter = router({
   /**
@@ -38,96 +38,80 @@ export const ragRouter = router({
     }),
 
   /**
-   * Trigger embedding generation for CFR sections (missing only)
-   * WARNING: This is a long-running operation that processes thousands of sections
+   * Ingest CFR sections from MySQL into Postgres (cfr_chunks). Only sections not yet in Postgres.
+   * RAG uses Postgres only; this and Airflow both write to Postgres.
    */
   ingest: publicProcedure
     .input(
       z.object({
-        limit: z.number().int().min(1).max(10000).optional(),
+        limit: z.number().int().min(1).max(100000).optional(),
         batchSize: z.number().int().min(1).max(100).default(50),
         titleFilter: z.number().int().min(1).max(50).optional(),
+        year: z.number().int().min(1900).max(2100).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
-      if (!db) {
-        throw new Error("Database not available");
+      if (!db) throw new Error("Database not available");
+
+      let q = db
+        .select({ id: cfrSections.id })
+        .from(cfrSections)
+        .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
+        .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id));
+
+      const filters = [];
+      if (input.titleFilter) {
+        filters.push(eq(cfrTitles.titleNumber, input.titleFilter));
+      }
+      if (input.year) {
+        filters.push(eq(cfrTitles.year, input.year));
       }
 
-      let sections: { id: number }[];
-      if (input.titleFilter) {
-        const q = db
-          .select({ id: cfrSections.id })
-          .from(cfrSections)
-          .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
-          .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
-          .where(
-            and(
-              isNull(cfrSections.embedding),
-              eq(cfrTitles.titleNumber, input.titleFilter)
-            )
-          );
-        if (input.limit) q.limit(input.limit);
-        sections = await q;
-      } else {
-        const q = db
-          .select({ id: cfrSections.id })
-          .from(cfrSections)
-          .where(isNull(cfrSections.embedding));
-        if (input.limit) q.limit(input.limit);
-        sections = await q;
+      if (filters.length > 0) {
+        // @ts-ignore - drizzle-orm type complexity
+        q = q.where(and(...filters));
       }
+
+      const sections = await q.limit(input.limit ?? 50000);
+
       const sectionIds = sections.map((s) => s.id);
 
       if (sectionIds.length === 0) {
         return {
-          message: "All sections already have embeddings",
+          message: "No sections to ingest",
           total: 0,
           success: 0,
           failed: 0,
+          skipped: 0,
         };
       }
 
-      console.log(`Starting embedding generation for ${sectionIds.length} sections...`);
-
-      const result = await generateSectionEmbeddings(sectionIds, input.batchSize);
+      console.log(`Starting Postgres ingestion for ${sectionIds.length} sections...`);
+      const result = await ingestSectionsToPostgres(sectionIds, input.batchSize);
 
       return {
-        message: `Embedding generation complete`,
+        message: "Ingestion complete (Postgres)",
         total: sectionIds.length,
         success: result.success,
         failed: result.failed,
+        skipped: result.skipped,
       };
     }),
 
   /**
-   * Get ingestion status (how many sections have embeddings)
+   * Ingestion status: Postgres-only (chunks in cfr_chunks = what RAG uses).
+   * total = chunks in Postgres; completed/missing kept for UI compatibility (same as total/0).
    */
   getIngestStatus: publicProcedure.query(async () => {
-    const db = await getDb();
-    if (!db) {
-      throw new Error("Database not available");
-    }
-
-    const [total] = await db
-      .select({ count: cfrSections.id })
-      .from(cfrSections);
-
-    const [withEmbeddings] = await db
-      .select({ count: cfrSections.id })
-      .from(cfrSections)
-      .where(isNull(cfrSections.embedding));
-
-    const totalCount = Number(total?.count ?? 0);
-    const missingCount = Number(withEmbeddings?.count ?? 0);
-    const completedCount = totalCount - missingCount;
-
+    const { getPostgresStats } = await import("../_core/rag");
+    const stats = await getPostgresStats();
+    const totalChunks = stats.totalChunks;
     return {
-      total: totalCount,
-      completed: completedCount,
-      missing: missingCount,
-      progress: totalCount > 0 ? (completedCount / totalCount) * 100 : 0,
+      total: totalChunks,
+      completed: totalChunks,
+      totalMySQL: stats.totalSectionsMySQL,
+      progress: stats.totalSectionsMySQL > 0 ? Math.round((totalChunks / stats.totalSectionsMySQL) * 100) : 0,
     };
   }),
 
@@ -138,5 +122,13 @@ export const ragRouter = router({
     // Dynamically import to avoid circular dep issues if any, or just use the exported function suitable
     const { getPostgresStats } = await import("../_core/rag");
     return await getPostgresStats();
+  }),
+
+  /**
+   * Gap analysis: MySQL counts vs Postgres counts
+   */
+  getGapAnalysis: publicProcedure.query(async () => {
+    const { getGapAnalysis } = await import("../_core/rag");
+    return await getGapAnalysis();
   }),
 });

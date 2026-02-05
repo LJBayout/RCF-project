@@ -16,6 +16,7 @@ const Search = lazy(() => import("./pages/Search"));
 const AskCFR = lazy(() => import("./pages/AskCFR"));
 const ApiDocs = lazy(() => import("./pages/ApiDocs"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Masterclass = lazy(() => import("./pages/Masterclass"));
 const CFRBrowser = lazy(() => import("./pages/CFRBrowser"));
 const RAGAdmin = lazy(() => import("./pages/RAGAdmin"));
 const Login = lazy(() => import("./pages/Login"));
@@ -69,6 +70,11 @@ function Router() {
         <Route path={ROUTES.dashboard}>
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path={ROUTES.masterclass}>
+          <ProtectedRoute>
+            <Masterclass />
           </ProtectedRoute>
         </Route>
         <Route path={ROUTES.notFound} component={NotFound} />

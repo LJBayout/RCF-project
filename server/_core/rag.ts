@@ -2,7 +2,7 @@ import { Client } from "pg";
 import OpenAI from "openai";
 import { getDb } from "../db";
 import { cfrSections, cfrParts, cfrTitles } from "../../drizzle/schema";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,104 +28,38 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  const denom = Math.sqrt(normA) * Math.sqrt(normB);
-  return denom === 0 ? 0 : dot / denom;
-}
-
-function parseEmbeddingStr(s: string | null): number[] {
-  if (!s) return [];
-  try {
-    return JSON.parse(s) as number[];
-  } catch {
-    return s.split(",").map(Number);
-  }
-}
-
 /**
- * MySQL: search sections that have embeddings (in-memory similarity)
+ * PostgreSQL Vector Search (cfr_chunks + pgvector). Optional filter by CFR title.
  */
-async function searchMySQLVectors(
+async function searchPostgresVectors(
   embedding: number[],
   limit: number = 5,
   titleFilter?: number
-): Promise<Array<{ section: any; part: any; title: any; similarity: number }>> {
-  const db = await getDb();
-  if (!db) return [];
-
-  const rows = await db
-    .select({
-      section: cfrSections,
-      part: cfrParts,
-      title: cfrTitles,
-    })
-    .from(cfrSections)
-    .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
-    .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
-    .where(
-      titleFilter != null
-        ? and(isNotNull(cfrSections.embedding), eq(cfrTitles.titleNumber, titleFilter))
-        : isNotNull(cfrSections.embedding)
-    )
-    .limit(2000);
-  const withSimilarity = rows
-    .map((row) => {
-      const vec = parseEmbeddingStr(row.section.embedding);
-      if (vec.length === 0) return null;
-      return {
-        ...row,
-        similarity: cosineSimilarity(embedding, vec),
-      };
-    })
-    .filter((x): x is NonNullable<typeof x> => x != null)
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, limit);
-
-  return withSimilarity.map(({ section, part, title, similarity }) => ({
-    section: {
-      sectionNumber: section.sectionNumber,
-      subject: section.subject,
-      content: section.content,
-    },
-    part: { partNumber: part.partNumber, name: part.name },
-    title: { titleNumber: title.titleNumber, name: title.name },
-    similarity,
-    year: title.year,
-  }));
-}
-
-/**
- * PostgreSQL Vector Search (cfr_chunks + pgvector)
- */
-async function searchPostgresVectors(embedding: number[], limit: number = 5): Promise<any[]> {
+): Promise<any[]> {
   const client = new Client({ connectionString: POSTGRES_URL });
   try {
     await client.connect();
 
-    // Convert embedding to pgvector format string "[0.1, 0.2, ...]"
     const vectorStr = `[${embedding.join(",")}]`;
 
-    // Query for nearest neighbors using cosine distance (<=>) or L2 (<->)
-    // We use <=> (cosine) for best semantic match
-    const query = `
-      SELECT 
-        id, 
-        content, 
-        metadata, 
-        embedding <=> $1 as distance 
-      FROM cfr_chunks 
-      ORDER BY embedding <=> $1 ASC 
+    const useTitleFilter = titleFilter != null;
+    const query = useTitleFilter
+      ? `
+      SELECT id, content, metadata, embedding <=> $1 as distance
+      FROM cfr_chunks
+      WHERE (metadata->>'title')::int = $2
+      ORDER BY embedding <=> $1 ASC
+      LIMIT $3
+    `
+      : `
+      SELECT id, content, metadata, embedding <=> $1 as distance
+      FROM cfr_chunks
+      ORDER BY embedding <=> $1 ASC
       LIMIT $2
     `;
+    const params = useTitleFilter ? [vectorStr, titleFilter, limit] : [vectorStr, limit];
 
-    const res = await client.query(query, [vectorStr, limit]);
+    const res = await client.query(query, params);
 
     return res.rows.map(row => ({
       ...row,
@@ -140,8 +74,8 @@ async function searchPostgresVectors(embedding: number[], limit: number = 5): Pr
 }
 
 /**
- * Semantic search: uses BOTH MySQL (cfr_sections.embedding) and Postgres (cfr_chunks).
- * Results are merged and sorted by similarity. You control MySQL via the admin Embeddings tab.
+ * Semantic search: single source Postgres (cfr_chunks + pgvector).
+ * Ingest via Embeddings tab or Airflow; both write to Postgres.
  */
 export async function semanticSearch(
   query: string,
@@ -157,12 +91,9 @@ export async function semanticSearch(
   const queryEmbedding = await generateEmbedding(query);
   const fetchLimit = Math.max(limit * 2, 20);
 
-  const [mysqlResults, postgresChunks] = await Promise.all([
-    searchMySQLVectors(queryEmbedding, fetchLimit, titleFilter),
-    searchPostgresVectors(queryEmbedding, fetchLimit),
-  ]);
+  const postgresChunks = await searchPostgresVectors(queryEmbedding, fetchLimit, titleFilter);
 
-  const postgresMapped = postgresChunks.map((chunk: any) => {
+  const mapped = postgresChunks.map((chunk: any) => {
     const meta = chunk.metadata || {};
     let partNum = meta.part || 0;
     const sectionStr = String(meta.section || "").replace(/§/g, "").trim();
@@ -183,16 +114,118 @@ export async function semanticSearch(
     };
   });
 
-  const merged = [...mysqlResults, ...postgresMapped]
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, limit);
-
-  return merged;
+  return mapped.sort((a, b) => b.similarity - a.similarity).slice(0, limit);
 }
 
 /**
+ * Ingest CFR sections from MySQL into Postgres (cfr_documents + cfr_chunks).
+ * Only adds sections that are not yet in cfr_documents (avoids duplicates with Airflow).
+ * Used by the Embeddings tab "Start ingestion" — single source Postgres for RAG.
+ */
+export async function ingestSectionsToPostgres(
+  sectionIds: number[],
+  batchSize: number = 50
+): Promise<{ success: number; failed: number; skipped: number }> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const pg = new Client({ connectionString: POSTGRES_URL });
+  await pg.connect();
+
+  let success = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  try {
+    for (let i = 0; i < sectionIds.length; i += batchSize) {
+      const batch = sectionIds.slice(i, i + batchSize);
+
+      const rows = await db
+        .select({
+          id: cfrSections.id,
+          titleNumber: cfrTitles.titleNumber,
+          partNumber: cfrParts.partNumber,
+          sectionNumber: cfrSections.sectionNumber,
+          year: cfrTitles.year,
+          subject: cfrSections.subject,
+          content: cfrSections.content,
+          partName: cfrParts.name,
+          titleName: cfrTitles.name,
+        })
+        .from(cfrSections)
+        .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
+        .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
+        .where(inArray(cfrSections.id, batch));
+
+      if (rows.length === 0) continue;
+
+      const valuesClause = rows
+        .map((_, i) => `($${i * 3 + 1}, $${i * 3 + 2}, $${i * 3 + 3})`)
+        .join(", ");
+      const existingRes = await pg.query(
+        `SELECT title_number, section_number, year FROM cfr_documents
+         WHERE (title_number, section_number, year) IN (${valuesClause})`,
+        rows.flatMap((s) => [s.titleNumber, s.sectionNumber, String(s.year)])
+      );
+      const existingSet = new Set(
+        (existingRes.rows || []).map((r: any) => `${r.title_number}|${r.section_number}|${r.year}`)
+      );
+
+      for (const sec of rows) {
+        const key = `${sec.titleNumber}|${sec.sectionNumber}|${sec.year}`;
+        if (existingSet.has(key)) {
+          skipped++;
+          continue;
+        }
+
+        try {
+          const docRes = await pg.query(
+            `INSERT INTO cfr_documents (title_number, part_number, section_number, year, subject)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (title_number, section_number, year) DO NOTHING
+             RETURNING id`,
+            [sec.titleNumber, sec.partNumber, sec.sectionNumber, sec.year, sec.subject ?? ""]
+          );
+          const docId = docRes.rows?.[0]?.id;
+          if (!docId) {
+            skipped++;
+            continue;
+          }
+
+          const text = `Title ${sec.titleNumber}: ${sec.titleName}\nPart ${sec.partNumber}: ${sec.partName}\nSection ${sec.sectionNumber}: ${sec.subject}\n${sec.content || ""}`;
+          const embedding = await generateEmbedding(text);
+          const vectorStr = `[${embedding.join(",")}]`;
+          const meta = JSON.stringify({
+            title: sec.titleNumber,
+            part: sec.partNumber,
+            section: sec.sectionNumber,
+            year: sec.year,
+          });
+
+          await pg.query(
+            `INSERT INTO cfr_chunks (document_id, chunk_index, content, embedding, metadata)
+             VALUES ($1, 0, $2, $3::vector, $4::jsonb)`,
+            [docId, text, vectorStr, meta]
+          );
+          success++;
+          existingSet.add(key);
+          await new Promise((r) => setTimeout(r, 50));
+        } catch (err) {
+          console.error(`Ingest failed for section ${sec.id}:`, err);
+          failed++;
+        }
+      }
+    }
+  } finally {
+    await pg.end();
+  }
+
+  return { success, failed, skipped };
+}
+
+/**
+ * @deprecated RAG now uses Postgres only. Use ingestSectionsToPostgres for new ingestion.
  * Generate embeddings for CFR sections and store in MySQL (cfr_sections.embedding).
- * This is what the admin "Start ingestion" controls. RAG search uses these + Postgres.
  */
 export async function generateSectionEmbeddings(
   sectionIds: number[],
@@ -347,6 +380,9 @@ Please provide a comprehensive answer based on these sections.`,
 export async function getPostgresStats(): Promise<{
   totalChunks: number;
   totalDocuments: number;
+  totalSectionsMySQL: number;
+  totalParts: number;
+  totalYears: number;
   lastIngested: string | null;
   coveredTitles: number[];
   titleDistribution: { title: number; count: number }[];
@@ -379,6 +415,14 @@ export async function getPostgresStats(): Promise<{
     // Covered Titles (derived from distribution for consistency)
     const coveredTitles = titleDistribution.map(d => d.title).sort((a, b) => a - b);
 
+    // Get Parts Count
+    const partsRes = await client.query('SELECT COUNT(DISTINCT part_number) FROM cfr_documents');
+    const totalParts = parseInt(partsRes.rows[0].count, 10);
+
+    // Get Distinct Years Count
+    const yearsRes = await client.query('SELECT COUNT(DISTINCT year) FROM cfr_documents');
+    const totalYears = parseInt(yearsRes.rows[0].count, 10);
+
     // Get Data Timeline
     const rangeRes = await client.query('SELECT MIN(year) as min_year, MAX(year) as max_year FROM cfr_documents');
     const yearRange = rangeRes.rows[0].min_year ? {
@@ -386,18 +430,116 @@ export async function getPostgresStats(): Promise<{
       max: rangeRes.rows[0].max_year
     } : null;
 
+    // Total Sections in MySQL (Global Progress)
+    const db = await getDb();
+    let totalSectionsMySQL = 0;
+    if (db) {
+      const [{ count }] = await db.select({ count: sql`count(*)` }).from(cfrSections);
+      totalSectionsMySQL = Number(count);
+    }
+
     await client.end();
 
-    return { totalChunks, totalDocuments, lastIngested, coveredTitles, titleDistribution, yearRange };
+    return {
+      totalChunks,
+      totalDocuments,
+      totalSectionsMySQL,
+      totalParts,
+      totalYears,
+      lastIngested,
+      coveredTitles,
+      titleDistribution,
+      yearRange
+    };
   } catch (error) {
     console.error("Error fetching Postgres stats:", error);
     return {
       totalChunks: 0,
       totalDocuments: 0,
+      totalSectionsMySQL: 0,
+      totalParts: 0,
+      totalYears: 0,
       lastIngested: null,
       coveredTitles: [],
       titleDistribution: [],
       yearRange: null
     };
+  }
+}
+
+/**
+ * Gap Analysis: MySQL vs Postgres (Vector Store).
+ * Identifies what is missing from the RAG system.
+ */
+export async function getGapAnalysis(): Promise<Array<{
+  title: number;
+  year: number;
+  mysqlCount: number;
+  postgresCount: number;
+  status: "missing" | "partial" | "complete";
+  percentage: number;
+}>> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const pg = new Client({ connectionString: POSTGRES_URL });
+  await pg.connect();
+
+  try {
+    // 1. Get counts from MySQL per title/year
+    const mysqlRows = await db.execute(sql`
+        SELECT t.title_number as title, t.year, COUNT(s.id) as count
+        FROM cfr_titles t
+        JOIN cfr_parts p ON t.id = p.title_id
+        JOIN cfr_sections s ON p.id = s.part_id
+        GROUP BY t.title_number, t.year
+        ORDER BY t.title_number, t.year DESC
+    `);
+
+    // Handle Drizzle result format variations
+    let mysqlData: any[] = [];
+    if (Array.isArray(mysqlRows)) {
+      mysqlData = Array.isArray(mysqlRows[0]) ? mysqlRows[0] : mysqlRows;
+    } else if (mysqlRows && typeof mysqlRows === 'object' && (mysqlRows as any).rows) {
+      mysqlData = (mysqlRows as any).rows;
+    }
+
+    // 2. Get counts from Postgres per title/year
+    const pgRes = await pg.query(`
+        SELECT (metadata->>'title')::int as title, (metadata->>'year')::int as year, COUNT(*) as count
+        FROM cfr_chunks
+        GROUP BY (metadata->>'title')::int, (metadata->>'year')::int
+    `);
+    const pgData = pgRes.rows;
+
+    // 3. Create a map for Postgres data for fast lookup
+    const pgMap = new Map<string, number>();
+    pgData.forEach((r: any) => {
+      pgMap.set(`${r.title}|${r.year}`, parseInt(r.count, 10));
+    });
+
+    // 4. Transform and merge
+    const analysis = mysqlData.map((row: any) => {
+      const title = parseInt(row.title ?? row.TITLE, 10);
+      const year = parseInt(row.year ?? row.YEAR, 10);
+      const mysqlCount = parseInt(row.count ?? row.COUNT ?? 0, 10);
+      const postgresCount = pgMap.get(`${title}|${year}`) ?? 0;
+
+      let status: "missing" | "partial" | "complete" = "missing";
+      const percentage = mysqlCount > 0 ? Math.round((postgresCount / mysqlCount) * 100) : 100;
+
+      if (postgresCount === 0 && mysqlCount > 0) status = "missing";
+      else if (postgresCount < mysqlCount) status = "partial";
+      else status = "complete";
+
+      return { title, year, mysqlCount, postgresCount, status, percentage };
+    });
+
+    return analysis as any;
+  } catch (error) {
+    console.error("Gap Analysis Error:", error);
+    return [];
+  } finally {
+    await pg.end();
   }
 }

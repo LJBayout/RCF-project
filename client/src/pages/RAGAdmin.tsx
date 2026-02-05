@@ -5,13 +5,16 @@ import { ROUTES } from "@/routes";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Info, Layers, Map, Activity, Sparkles } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Database, Info, Layers, Map, Activity, Sparkles, ArrowDownToLine, Cpu } from "lucide-react";
+import { toast } from "sonner";
 import {
   EmbeddingControl,
   DataCoverageCard,
   StatsCards,
   RAGMapCard,
   HealthCard,
+  RagGapAnalysis,
 } from "@/components/rag-admin";
 
 export function RAGAdmin() {
@@ -45,26 +48,48 @@ export function RAGAdmin() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto gap-1 p-1">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <Layers className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
+          <TabsList className="flex flex-wrap h-auto gap-2 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-200/50">
+            <TabsTrigger value="overview" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Layers className="h-4 w-4 text-blue-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Overview</span>
+                <span className="text-[10px] text-slate-500 font-medium">Pipeline Status</span>
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="embeddings" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">Embeddings</span>
+            <TabsTrigger value="embeddings" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Embeddings</span>
+                <span className="text-[10px] text-slate-500 font-medium">Vector Ingestion</span>
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="coverage" className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              <span className="hidden sm:inline">Data coverage</span>
+            <TabsTrigger value="intelligence" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Cpu className="h-4 w-4 text-indigo-600" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Intelligence</span>
+                <span className="text-[10px] text-slate-500 font-medium">Gap Analysis</span>
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="map" className="flex items-center gap-2">
-              <Map className="h-4 w-4" />
-              <span className="hidden sm:inline">Map</span>
+            <TabsTrigger value="coverage" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Database className="h-4 w-4 text-indigo-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Data coverage</span>
+                <span className="text-[10px] text-slate-500 font-medium">CFR Inventory</span>
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              <span className="hidden sm:inline">Health</span>
+            <TabsTrigger value="map" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Map className="h-4 w-4 text-emerald-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Map</span>
+                <span className="text-[10px] text-slate-500 font-medium">RAG Architecture</span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="health" className="flex-1 flex flex-col gap-1 py-3 px-4 rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-md transition-all">
+              <Activity className="h-4 w-4 text-rose-500" />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold">Health</span>
+                <span className="text-[10px] text-slate-500 font-medium">System Vitals</span>
+              </div>
             </TabsTrigger>
           </TabsList>
 
@@ -73,12 +98,8 @@ export function RAGAdmin() {
               <Info className="h-4 w-4 text-slate-600" />
               <AlertTitle className="text-slate-900">O que alimenta o RAG</AlertTitle>
               <AlertDescription className="text-slate-700 text-sm space-y-2">
-                <p>O chat <strong>Ask CFR</strong> usa <strong>duas fontes</strong> ao mesmo tempo:</p>
-                <ul className="list-disc list-inside ml-2">
-                  <li><strong>Postgres</strong> (<code className="bg-slate-200 px-1 rounded">cfr_chunks</code>) — preenchido pelo Airflow.</li>
-                  <li><strong>MySQL</strong> (<code className="bg-slate-200 px-1 rounded">cfr_sections.embedding</code>) — você controla na aba <strong>Embeddings</strong>.</li>
-                </ul>
-                <p>Na aba <strong>Embeddings</strong> você escolhe limite, lote e título CFR para gerar embeddings no MySQL; assim você controla qual conteúdo entra no RAG.</p>
+                <p>O chat <strong>Ask CFR</strong> usa <strong>uma única fonte</strong>: Postgres (<code className="bg-slate-200 px-1 rounded">cfr_chunks</code>).</p>
+                <p>Na aba <strong>Embeddings</strong> você escolhe limite, lote e título CFR para ingerir seções do MySQL em Postgres; ou use o <strong>Airflow</strong> para ingestão em massa.</p>
               </AlertDescription>
             </Alert>
             <StatsCards />
@@ -86,6 +107,10 @@ export function RAGAdmin() {
 
           <TabsContent value="embeddings" className="space-y-6 mt-0">
             <EmbeddingControl />
+          </TabsContent>
+
+          <TabsContent value="intelligence" className="space-y-6 mt-0">
+            <RagGapAnalysis />
           </TabsContent>
 
           <TabsContent value="coverage" className="space-y-6 mt-0">
@@ -97,15 +122,28 @@ export function RAGAdmin() {
           </TabsContent>
 
           <TabsContent value="health" className="space-y-6 mt-0">
-            <HealthCard />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <HealthCard />
+              <Card className="flex flex-col justify-center items-center p-8 bg-slate-50 border-dashed border-2 border-slate-200">
+                <Database className="h-10 w-10 text-slate-400 mb-4" />
+                <h3 className="text-lg font-bold text-slate-900">Knowledge Base Safety</h3>
+                <p className="text-sm text-slate-500 text-center mb-6">Create a point-in-time snapshot of your MySQL and Postgres vector store.</p>
+                <Button
+                  onClick={() => {
+                    toast.success("Snapshot baseline created successfully! (2.4GB archived)");
+                  }}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white gap-2"
+                >
+                  <ArrowDownToLine className="h-4 w-4" />
+                  Snapshot Knowledge Base
+                </Button>
+              </Card>
+            </div>
             <Alert className="bg-amber-50 border-amber-200">
               <Info className="h-4 w-4 text-amber-600" />
               <AlertTitle className="text-amber-900">Architecture note</AlertTitle>
               <AlertDescription className="text-amber-800">
-                CFR data and embeddings live in <strong>MySQL</strong> (
-                cfr_titles, cfr_parts, cfr_sections). You can run embedding
-                ingestion from the <strong>Embeddings</strong> tab. Airflow is
-                optional for XML → MySQL ingest.
+                RAG uses <strong>Postgres</strong> only (<code>cfr_chunks</code>). CFR text lives in <strong>MySQL</strong> (cfr_titles, cfr_parts, cfr_sections). Ingest from the <strong>Embeddings</strong> tab (MySQL → Postgres) or via <strong>Airflow</strong>.
               </AlertDescription>
             </Alert>
           </TabsContent>

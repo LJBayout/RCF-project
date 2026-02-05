@@ -21,6 +21,7 @@ export const ROUTES = {
   ragAdmin: "/admin/rag",
   docs: "/docs",
   dashboard: "/dashboard",
+  masterclass: "/masterclass",
   notFound: "/404",
   /** Hash anchors on home (e.g. /#features, /#pricing) */
   homeHash: (hash: string) => `${ROUTES.home}#${hash}`,

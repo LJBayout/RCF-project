@@ -50,6 +50,10 @@ export default function AskCFR() {
     }>
   >([]);
 
+  const { data: ingestStatus } = trpc.rag.getIngestStatus.useQuery(undefined, {
+    refetchInterval: 30000, // Sync every 30s
+  });
+
   const askMutation = trpc.rag.ask.useMutation({
     onSuccess: (response) => {
       setMessages((prev) => [
@@ -100,14 +104,29 @@ export default function AskCFR() {
                 <Activity className="h-3 w-3 animate-pulse text-green-500" />
                 RAG System Online
               </Badge>
+              {ingestStatus && (
+                <Badge variant="secondary" className="text-xs bg-slate-100 text-slate-600 border-slate-200">
+                  {ingestStatus.progress}% Global Coverage ({ingestStatus.total.toLocaleString()} / {ingestStatus.totalMySQL.toLocaleString()} sections)
+                </Badge>
+              )}
               <Badge variant="secondary" className="text-xs">
                 GPT-4o + Vector Search
               </Badge>
             </div>
             <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Regulatory Intelligence</h1>
-            <p className="text-slate-500 max-w-2xl mt-1">
-              Deep semantic search across 30 years of federal regulations.
-            </p>
+            <div className="flex flex-col gap-1 mt-1">
+              <p className="text-slate-500 max-w-2xl text-sm">
+                Deep semantic search across 30 years of federal regulations.
+              </p>
+              {ingestStatus && ingestStatus.progress < 100 && (
+                <div className="w-full max-w-md h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-500"
+                    style={{ width: `${ingestStatus.progress}%` }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Title Filter */}
@@ -215,7 +234,7 @@ export default function AskCFR() {
 
                       {source.partNumber > 0 ? (
                         <a
-                          href={`/browse/title/${source.titleNumber}/part/${source.partNumber}#section-${source.sectionNumber}`}
+                          href={`/browse/title/${source.titleNumber}/part/${source.partNumber}#section-${String(source.sectionNumber).replace(/[^a-zA-Z0-9.]/g, "")}`}
                           className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-slate-50 px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 group-hover:text-blue-600"
                           target="_blank"
                           rel="noopener noreferrer"

@@ -1,86 +1,87 @@
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { FileText, Menu, X, LogOut, User, Compass } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { FileText, Menu, X, LogOut, User, Compass, Layers, Search, Sparkles, Database, ArrowLeft, GraduationCap } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTour } from "@/contexts/TourContext";
 import { ROUTES } from "@/routes";
 
+function NavLink({ href, icon: Icon, label, active }: { href: string; icon: any; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "flex items-center gap-2 px-3 h-8 text-xs font-semibold rounded-lg transition-all duration-200",
+        active
+          ? "bg-white text-blue-600 shadow-sm border border-slate-200"
+          : "text-slate-600 hover:text-slate-900 hover:bg-white/50"
+      )}
+    >
+      <Icon className={cn("h-3.5 w-3.5", active ? "text-blue-500" : "text-slate-400")} />
+      {label}
+    </Link>
+  );
+}
+
 export function Navbar() {
+  const [location, setLocation] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
   const { openTour } = useTour();
-  const [, setLocation] = useLocation();
 
   const handleLogout = () => {
     logout();
     setLocation(ROUTES.login);
   };
 
+  const isHome = location === "/" || location === ROUTES.home;
+
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container">
         <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link
-            href={ROUTES.home}
-            className="flex items-center gap-2 font-bold text-xl"
-          >
-            <FileText className="h-6 w-6 text-primary" />
-            <span>CFR Data</span>
-          </Link>
+          {/* Logo & Back */}
+          <div className="flex items-center gap-4">
+            {!isHome && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => window.history.back()}
+                className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center shrink-0"
+                title="Go Back"
+              >
+                <ArrowLeft className="h-4 w-4 text-slate-500" />
+              </Button>
+            )}
+            <Link
+              href={ROUTES.home}
+              className="flex items-center gap-2 font-bold text-xl group"
+            >
+              <FileText className="h-6 w-6 text-primary group-hover:scale-110 transition-transform" />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500">CFR Data</span>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-1 bg-slate-100/50 p-1 rounded-xl border border-slate-200/50">
             <Button
               variant="ghost"
               size="sm"
               onClick={openTour}
-              className="text-muted-foreground hover:text-foreground"
+              className="px-3 h-8 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition-all"
               data-tour="tour-trigger"
             >
-              <Compass className="mr-1.5 h-4 w-4" />
+              <Compass className="mr-1.5 h-3.5 w-3.5" />
               Tour
             </Button>
-            <Link
-              href={ROUTES.browse}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              data-tour="browse"
-            >
-              Browse CFR
-            </Link>
-            <Link
-              href={ROUTES.search}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              data-tour="search"
-            >
-              Search
-            </Link>
-            <Link
-              href={ROUTES.askCFR}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Compliance Intelligence
-            </Link>
-            <Link
-              href={ROUTES.docs}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              data-tour="docs"
-            >
-              API Docs
-            </Link>
-            <Link
-              href={ROUTES.ragAdmin}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              RAG Ingestion
-            </Link>
-            <Link
-              href={ROUTES.homeHash("pricing")}
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Pricing
-            </Link>
+
+            <NavLink href={ROUTES.browse} icon={Layers} label="Browse CFR" active={useLocation()[0] === ROUTES.browse} />
+            <NavLink href={ROUTES.search} icon={Search} label="Search" active={useLocation()[0] === ROUTES.search} />
+            <NavLink href={ROUTES.askCFR} icon={Sparkles} label="AI Intelligence" active={useLocation()[0] === ROUTES.askCFR} />
+            <NavLink href={ROUTES.ragAdmin} icon={Database} label="RAG Ops" active={useLocation()[0] === ROUTES.ragAdmin} />
+            <NavLink href={ROUTES.masterclass} icon={GraduationCap} label="Masterclass" active={useLocation()[0] === ROUTES.masterclass} />
+            <NavLink href={ROUTES.docs} icon={FileText} label="API Docs" active={useLocation()[0] === ROUTES.docs} />
           </div>
 
           {/* CTA Buttons */}
