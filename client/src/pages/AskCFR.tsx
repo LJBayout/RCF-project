@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AIChatBox, Message } from "@/components/AIChatBox";
+import { AvailableDataCoverage } from "@/components/AvailableDataCoverage";
 import { Navbar } from "@/components/Navbar";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -94,7 +95,7 @@ export default function AskCFR() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <div className="flex-1 container py-8 px-4 max-w-7xl mx-auto">
+      <div className="flex-1 container py-8 px-4 max-w-[90rem] mx-auto">
 
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -145,6 +146,11 @@ export default function AskCFR() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Data Coverage Overview */}
+        <div className="mb-8">
+          <AvailableDataCoverage />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-220px)] min-h-[600px]">

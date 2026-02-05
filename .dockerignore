@@ -114,6 +114,7 @@ temp
 *.tmp
 *.bak
 *.backup
+backups/
 
 # Docker files (don't copy into itself)
 Dockerfile
