@@ -1,17 +1,15 @@
 import { Client } from "pg";
-import axios from "axios";
 import OpenAI from "openai";
+import { getDb } from "../db";
+import { cfrSections, cfrParts, cfrTitles } from "../../drizzle/schema";
+import { eq, and, isNotNull } from "drizzle-orm";
 
-// Initialize OpenAI for Chat
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 const CHAT_MODEL = "gpt-4o-mini";
-
-// Configuration
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://host.docker.internal:11434";
 const EMBEDDING_MODEL = "text-embedding-3-small";
-const POSTGRES_URL = process.env.DATABASE_URL_PG || "postgresql://airflow:airflow@postgres:5432/airflow"; // Using Airflow DB for vectors
+const POSTGRES_URL = process.env.DATABASE_URL_PG || "postgresql://airflow:airflow@postgres:5432/airflow";
 
 /**
  * Generate embedding using OpenAI (Matches Airflow Ingestion)
@@ -30,8 +28,81 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length) return 0;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
+}
+
+function parseEmbeddingStr(s: string | null): number[] {
+  if (!s) return [];
+  try {
+    return JSON.parse(s) as number[];
+  } catch {
+    return s.split(",").map(Number);
+  }
+}
+
 /**
- * PostgreSQL Vector Search
+ * MySQL: search sections that have embeddings (in-memory similarity)
+ */
+async function searchMySQLVectors(
+  embedding: number[],
+  limit: number = 5,
+  titleFilter?: number
+): Promise<Array<{ section: any; part: any; title: any; similarity: number }>> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const rows = await db
+    .select({
+      section: cfrSections,
+      part: cfrParts,
+      title: cfrTitles,
+    })
+    .from(cfrSections)
+    .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
+    .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
+    .where(
+      titleFilter != null
+        ? and(isNotNull(cfrSections.embedding), eq(cfrTitles.titleNumber, titleFilter))
+        : isNotNull(cfrSections.embedding)
+    )
+    .limit(2000);
+  const withSimilarity = rows
+    .map((row) => {
+      const vec = parseEmbeddingStr(row.section.embedding);
+      if (vec.length === 0) return null;
+      return {
+        ...row,
+        similarity: cosineSimilarity(embedding, vec),
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x != null)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit);
+
+  return withSimilarity.map(({ section, part, title, similarity }) => ({
+    section: {
+      sectionNumber: section.sectionNumber,
+      subject: section.subject,
+      content: section.content,
+    },
+    part: { partNumber: part.partNumber, name: part.name },
+    title: { titleNumber: title.titleNumber, name: title.name },
+    similarity,
+    year: title.year,
+  }));
+}
+
+/**
+ * PostgreSQL Vector Search (cfr_chunks + pgvector)
  */
 async function searchPostgresVectors(embedding: number[], limit: number = 5): Promise<any[]> {
   const client = new Client({ connectionString: POSTGRES_URL });
@@ -69,7 +140,8 @@ async function searchPostgresVectors(embedding: number[], limit: number = 5): Pr
 }
 
 /**
- * Semantic search across CFR sections using embeddings
+ * Semantic search: uses BOTH MySQL (cfr_sections.embedding) and Postgres (cfr_chunks).
+ * Results are merged and sorted by similarity. You control MySQL via the admin Embeddings tab.
  */
 export async function semanticSearch(
   query: string,
@@ -80,62 +152,105 @@ export async function semanticSearch(
   part: any;
   title: any;
   similarity: number;
+  year?: number | string;
 }>> {
-
-  // 1. Generate Query Vector via Ollama
   const queryEmbedding = await generateEmbedding(query);
+  const fetchLimit = Math.max(limit * 2, 20);
 
-  // 2. Search Postgres
-  const chunks = await searchPostgresVectors(queryEmbedding, limit);
+  const [mysqlResults, postgresChunks] = await Promise.all([
+    searchMySQLVectors(queryEmbedding, fetchLimit, titleFilter),
+    searchPostgresVectors(queryEmbedding, fetchLimit),
+  ]);
 
-  // 3. Map to Frontend Format
-  // The frontend expects nested objects { title: {...}, part: {...}, section: {...} }
-  // Our Postgres metadata JSON has: { "title": 12, "part": 456, "section": "12.3", "year": 2024 }
-
-  return chunks.map(chunk => {
+  const postgresMapped = postgresChunks.map((chunk: any) => {
     const meta = chunk.metadata || {};
-
-    // Heuristic: If part is 0/missing, try to extract from section number (e.g. "11.10" -> Part 11)
     let partNum = meta.part || 0;
-    const sectionStr = String(meta.section || "").replace(/§/g, '').trim();
-
+    const sectionStr = String(meta.section || "").replace(/§/g, "").trim();
     if (partNum === 0 && sectionStr.includes(".")) {
       const inferred = parseInt(sectionStr.split(".")[0], 10);
-      if (!isNaN(inferred) && inferred > 0) {
-        partNum = inferred;
-      }
+      if (!isNaN(inferred) && inferred > 0) partNum = inferred;
     }
-
     return {
-      title: {
-        titleNumber: meta.title,
-        name: `Title ${meta.title}`
-      },
-      part: {
-        partNumber: partNum,
-        name: `Part ${partNum}`
-      },
+      title: { titleNumber: meta.title, name: `Title ${meta.title}` },
+      part: { partNumber: partNum, name: `Part ${partNum}` },
       section: {
-        // Remove § symbol and trim for clean ID
         sectionNumber: sectionStr,
-        subject: chunk.content.substring(0, 50) + "...",
+        subject: (chunk.content || "").substring(0, 50) + "...",
         content: chunk.content,
-        embedding: null
       },
-      year: meta.year || "Unknown",
-      similarity: chunk.similarity
+      similarity: chunk.similarity,
+      year: meta.year ?? "Unknown",
     };
   });
+
+  const merged = [...mysqlResults, ...postgresMapped]
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit);
+
+  return merged;
 }
 
-// Note: Ingestion is now handled by Airflow DAG (cfr_rag_ingestion_optimized).
-// This function is kept as a stub for compatibility or future implementation.
+/**
+ * Generate embeddings for CFR sections and store in MySQL (cfr_sections.embedding).
+ * This is what the admin "Start ingestion" controls. RAG search uses these + Postgres.
+ */
 export async function generateSectionEmbeddings(
   sectionIds: number[],
   batchSize: number = 100
 ): Promise<{ success: number; failed: number }> {
-  console.log("Ingestion requested: Handled by Airflow DAG");
-  return { success: 0, failed: 0 };
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  let success = 0;
+  let failed = 0;
+
+  for (let i = 0; i < sectionIds.length; i += batchSize) {
+    const batch = sectionIds.slice(i, i + batchSize);
+    for (const sectionId of batch) {
+      try {
+        const [row] = await db
+          .select({
+            section: cfrSections,
+            part: cfrParts,
+            title: cfrTitles,
+          })
+          .from(cfrSections)
+          .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
+          .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
+          .where(eq(cfrSections.id, sectionId))
+          .limit(1);
+
+        if (!row) {
+          failed++;
+          continue;
+        }
+
+        const text = `Title ${row.title.titleNumber}: ${row.title.name}
+Part ${row.part.partNumber}: ${row.part.name}
+Section ${row.section.sectionNumber}: ${row.section.subject}
+${row.section.content}`;
+
+        const embedding = await generateEmbedding(text);
+        await db
+          .update(cfrSections)
+          .set({
+            embedding: JSON.stringify(embedding),
+            embedding_updated_at: new Date(),
+          })
+          .where(eq(cfrSections.id, sectionId));
+
+        success++;
+        await new Promise((r) => setTimeout(r, 100));
+      } catch (err) {
+        console.error(`Embedding failed for section ${sectionId}:`, err);
+        failed++;
+      }
+    }
+  }
+
+  return { success, failed };
 }
 
 /**

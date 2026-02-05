@@ -2,8 +2,8 @@ import { z } from "zod";
 import { publicProcedure, router } from "../_core/trpc";
 import { answerQuestion, semanticSearch, generateSectionEmbeddings } from "../_core/rag";
 import { getDb } from "../db";
-import { cfrSections } from "../../drizzle/schema";
-import { isNull } from "drizzle-orm";
+import { cfrSections, cfrParts, cfrTitles } from "../../drizzle/schema";
+import { eq, and, isNull } from "drizzle-orm";
 
 export const ragRouter = router({
   /**
@@ -38,7 +38,7 @@ export const ragRouter = router({
     }),
 
   /**
-   * Trigger embedding generation for all CFR sections
+   * Trigger embedding generation for CFR sections (missing only)
    * WARNING: This is a long-running operation that processes thousands of sections
    */
   ingest: publicProcedure
@@ -46,6 +46,7 @@ export const ragRouter = router({
       z.object({
         limit: z.number().int().min(1).max(10000).optional(),
         batchSize: z.number().int().min(1).max(100).default(50),
+        titleFilter: z.number().int().min(1).max(50).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -54,17 +55,29 @@ export const ragRouter = router({
         throw new Error("Database not available");
       }
 
-      // Find sections without embeddings
-      const sectionsQuery = db
-        .select({ id: cfrSections.id })
-        .from(cfrSections)
-        .where(isNull(cfrSections.embedding));
-
-      if (input.limit) {
-        sectionsQuery.limit(input.limit);
+      let sections: { id: number }[];
+      if (input.titleFilter) {
+        const q = db
+          .select({ id: cfrSections.id })
+          .from(cfrSections)
+          .innerJoin(cfrParts, eq(cfrSections.partId, cfrParts.id))
+          .innerJoin(cfrTitles, eq(cfrParts.titleId, cfrTitles.id))
+          .where(
+            and(
+              isNull(cfrSections.embedding),
+              eq(cfrTitles.titleNumber, input.titleFilter)
+            )
+          );
+        if (input.limit) q.limit(input.limit);
+        sections = await q;
+      } else {
+        const q = db
+          .select({ id: cfrSections.id })
+          .from(cfrSections)
+          .where(isNull(cfrSections.embedding));
+        if (input.limit) q.limit(input.limit);
+        sections = await q;
       }
-
-      const sections = await sectionsQuery;
       const sectionIds = sections.map((s) => s.id);
 
       if (sectionIds.length === 0) {

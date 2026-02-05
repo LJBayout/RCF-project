@@ -254,16 +254,31 @@ export async function listTitles(year?: number): Promise<{ id: number; titleNumb
   );
 }
 
-/** Aggregate counts for UI: distinct titles and total sections (same DB Airflow writes to). */
-export async function getCoverage(): Promise<{ titlesCount: number; sectionsCount: number }> {
+/** Aggregate counts and year range for UI (same DB Airflow writes to). */
+export async function getCoverage(): Promise<{
+  titlesCount: number;
+  sectionsCount: number;
+  partsCount: number;
+  years: number[];
+  yearMin: number | null;
+  yearMax: number | null;
+}> {
   return getOrSetCache(
     "getCoverage",
     {},
     async () => {
       const database = await db.getDb();
-      if (!database) return { titlesCount: 0, sectionsCount: 0 };
+      if (!database) {
+        return {
+          titlesCount: 0,
+          sectionsCount: 0,
+          partsCount: 0,
+          years: [],
+          yearMin: null,
+          yearMax: null,
+        };
+      }
 
-      // Use Drizzle select + sql so result shape is consistent (mysql2 raw execute varies)
       const [titlesRow] = await database
         .select({ c: sql<number>`count(distinct ${cfrTitles.titleNumber})` })
         .from(cfrTitles)
@@ -272,9 +287,26 @@ export async function getCoverage(): Promise<{ titlesCount: number; sectionsCoun
         .select({ c: sql<number>`count(*)` })
         .from(cfrSections)
         .limit(1);
-      const titlesCount = Number(titlesRow?.c ?? 0);
-      const sectionsCount = Number(sectionsRow?.c ?? 0);
-      return { titlesCount, sectionsCount };
+      const [partsRow] = await database
+        .select({ c: sql<number>`count(*)` })
+        .from(cfrParts)
+        .limit(1);
+      const yearsRows = await database
+        .selectDistinct({ year: cfrTitles.year })
+        .from(cfrTitles)
+        .orderBy(cfrTitles.year);
+      const years = yearsRows.map((r) => r.year);
+      const yearMin = years.length > 0 ? Math.min(...years) : null;
+      const yearMax = years.length > 0 ? Math.max(...years) : null;
+
+      return {
+        titlesCount: Number(titlesRow?.c ?? 0),
+        sectionsCount: Number(sectionsRow?.c ?? 0),
+        partsCount: Number(partsRow?.c ?? 0),
+        years,
+        yearMin,
+        yearMax,
+      };
     },
     1800 // 30 minutes TTL
   );
